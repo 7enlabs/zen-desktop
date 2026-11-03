@@ -758,7 +758,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d045de693cb712d0b22c6a64be5b953f67b3ce00ab5ad3dd5d8b441886ab8e1a"
 dependencies = [
  "quote",
- "syn 3.0.9",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -3339,7 +3339,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -3724,9 +3724,9 @@ checksum = "eec689c0bc40ff2458a5977b6619cb718087084a18e02a131c599b62d05e1a5f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -5688,18 +5688,18 @@ dependencies = [
 
 [[package]]
 name = "webpki-root-certs"
-version = "1.0.9"
+version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b96554aa2acc8ccdb7e1c9a58a7a68dd5d13bccc69cd124cb09406db612a1c9b"
+checksum = "e49d0e65abc00c142e8f9428da991da9f1a250c39be97459901eb12b9b49f62a"
 dependencies = [
  "rustls-pki-types",
 ]
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.9"
+version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dcd9d09a39985f5344844e66b0c530a33843579125f23e21e9f0f220850f22a"
+checksum = "f5f280bbb2b287bc8e7de7e3852945a0ff50d1bbcb5ed42b6c7a568c546df171"
 dependencies = [
  "rustls-pki-types",
 ]
@@ -6455,7 +6455,7 @@ dependencies = [
 [[package]]
 name = "zen-agent"
 version = "0.1.0"
-source = "git+https://gitlab.com/atzenn/zencode.git?rev=250e8d4#250e8d4a201e459336377126fda1d9510ceb4759"
+source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6472,7 +6472,7 @@ dependencies = [
 [[package]]
 name = "zen-core"
 version = "0.1.0"
-source = "git+https://gitlab.com/atzenn/zencode.git?rev=250e8d4#250e8d4a201e459336377126fda1d9510ceb4759"
+source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6483,7 +6483,7 @@ dependencies = [
 [[package]]
 name = "zen-tools"
 version = "0.1.0"
-source = "git+https://gitlab.com/atzenn/zencode.git?rev=250e8d4#250e8d4a201e459336377126fda1d9510ceb4759"
+source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6531,8 +6531,10 @@ version = "0.3.0-dev"
 dependencies = [
  "anyhow",
  "async-trait",
+ "minisign-verify",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
  "zen-agent",
  "zen-core",
