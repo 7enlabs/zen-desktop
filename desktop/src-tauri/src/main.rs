@@ -8,7 +8,9 @@ use std::sync::{Arc, Mutex};
 
 use notifications::NotificationManager;
 use tauri::ipc::Channel;
+use tauri::Emitter;
 use tauri::Manager;
+use tauri::menu::{MenuBuilder, MenuItem, SubmenuBuilder};
 use zencode_engine::{
     checkpoints::CheckpointManager,
     events::parse_ndjson,
@@ -251,6 +253,45 @@ fn signed_version_comparator(current: &str, release: tauri_plugin_updater::Remot
     }
 }
 
+
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu> {
+    let file = SubmenuBuilder::new(app, "File")
+        .item(&MenuItem::with_id(app, "new-session", "New Session", true, Some("CmdOrCtrl+N"))?)
+        .item(&MenuItem::with_id(app, "focus-composer", "Focus Composer", true, Some("CmdOrCtrl+L"))?)
+        .separator()
+        .item(&MenuItem::with_id(app, "open-palette", "Command Palette", true, Some("CmdOrCtrl+K"))?)
+        .build()?;
+    let edit = SubmenuBuilder::new(app, "Edit")
+        .text("copy-session-id", "Copy Session ID")
+        .build()?;
+    let view = SubmenuBuilder::new(app, "View")
+        .item(&MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, Some("CmdOrCtrl+B"))?)
+        .item(&MenuItem::with_id(app, "toggle-density", "Toggle Density", true, Some("CmdOrCtrl+Shift+D"))?)
+        .separator()
+        .item(&MenuItem::with_id(app, "tab-chat", "Chat Tab", true, Some("CmdOrCtrl+1"))?)
+        .item(&MenuItem::with_id(app, "tab-timeline", "Timeline Tab", true, Some("CmdOrCtrl+2"))?)
+        .item(&MenuItem::with_id(app, "tab-network", "Network Tab", true, Some("CmdOrCtrl+3"))?)
+        .item(&MenuItem::with_id(app, "tab-terminal", "Terminal Tab", true, Some("CmdOrCtrl+4"))?)
+        .separator()
+        .text("toggle-inspector", "Toggle Inspector")
+        .build()?;
+    let session = SubmenuBuilder::new(app, "Session")
+        .text("next-session", "Next Session")
+        .text("prev-session", "Previous Session")
+        .text("focus-search", "Search Sessions")
+        .build()?;
+    let help = SubmenuBuilder::new(app, "Help")
+        .text("about", "About ZenCode Desktop")
+        .build()?;
+    MenuBuilder::new(app)
+        .item(&file)
+        .item(&edit)
+        .item(&view)
+        .item(&session)
+        .item(&help)
+        .build()
+}
+
 fn main() {
     tauri::Builder::default()
 
@@ -299,7 +340,18 @@ fn main() {
             if let Err(e) = notifications::register_actions(app.handle()) {
                 eprintln!("warning: could not register notification actions: {e}");
             }
+            match build_app_menu(app.handle()) {
+                Ok(menu) => {
+                    if let Err(e) = app.set_menu(menu) {
+                        eprintln!("warning: could not set app menu: {e}");
+                    }
+                }
+                Err(e) => eprintln!("warning: could not build app menu: {e}"),
+            }
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            let _ = app.emit("menu-command", event.id().as_ref());
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
