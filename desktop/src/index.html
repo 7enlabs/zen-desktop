@@ -11,6 +11,48 @@
     <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.js"></script>
   </head>
   <body>
+    <nav id="menubar" aria-label="Menu bar">
+      <div class="menu">
+        <button type="button" class="menu-label">File</button>
+        <ul class="menu-drop hidden">
+          <li><button type="button" data-cmd="new-session">New Session <span class="accel">Ctrl/Cmd+N</span></button></li>
+          <li><button type="button" data-cmd="focus-composer">Focus Composer <span class="accel">Ctrl/Cmd+L</span></button></li>
+          <li><button type="button" data-cmd="open-palette">Command Palette <span class="accel">Ctrl/Cmd+K</span></button></li>
+        </ul>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-label">Edit</button>
+        <ul class="menu-drop hidden">
+          <li><button type="button" data-cmd="copy-session-id">Copy Session ID</button></li>
+        </ul>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-label">View</button>
+        <ul class="menu-drop hidden">
+          <li><button type="button" data-cmd="toggle-sidebar">Toggle Sidebar <span class="accel">Ctrl/Cmd+B</span></button></li>
+          <li><button type="button" data-cmd="toggle-density">Toggle Density <span class="accel">Ctrl/Cmd+Shift+D</span></button></li>
+          <li><button type="button" data-cmd="tab-chat">Chat Tab <span class="accel">Ctrl/Cmd+1</span></button></li>
+          <li><button type="button" data-cmd="tab-timeline">Timeline Tab <span class="accel">Ctrl/Cmd+2</span></button></li>
+          <li><button type="button" data-cmd="tab-network">Network Tab <span class="accel">Ctrl/Cmd+3</span></button></li>
+          <li><button type="button" data-cmd="tab-terminal">Terminal Tab <span class="accel">Ctrl/Cmd+4</span></button></li>
+          <li><button type="button" data-cmd="toggle-inspector">Toggle Inspector</button></li>
+        </ul>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-label">Session</button>
+        <ul class="menu-drop hidden">
+          <li><button type="button" data-cmd="next-session">Next Session</button></li>
+          <li><button type="button" data-cmd="prev-session">Previous Session</button></li>
+          <li><button type="button" data-cmd="focus-search">Search Sessions <span class="accel">/</span></button></li>
+        </ul>
+      </div>
+      <div class="menu">
+        <button type="button" class="menu-label">Help</button>
+        <ul class="menu-drop hidden">
+          <li><button type="button" data-cmd="about">About ZenCode Desktop</button></li>
+        </ul>
+      </div>
+    </nav>
     <div id="app">
       <aside id="sidebar">
         <div class="sidebar-header">
@@ -21,6 +63,27 @@
         <ul id="session-list"></ul>
       </aside>
       <main id="chat-pane">
+        <div id="toolbar" aria-label="Toolbar">
+          <div class="tb-group" aria-label="Session">
+            <button type="button" id="tb-new-session" data-cmd="new-session" title="New session">＋ New</button>
+            <button type="button" id="tb-sidebar" data-cmd="toggle-sidebar" title="Toggle sidebar">Sidebar</button>
+            <span id="tb-session" class="tb-label">No session</span>
+          </div>
+          <div class="tb-group" aria-label="Status">
+            <span id="status-model">model: -</span>
+            <span id="status-quota">quota: -</span>
+            <span id="status-conn">● mock</span>
+          </div>
+          <div class="tb-group" aria-label="View">
+            <button type="button" id="tb-density" data-cmd="toggle-density" title="Toggle density">Density: Normal</button>
+            <button type="button" id="tb-palette" data-cmd="open-palette" title="Command palette">⌘K Palette</button>
+            <button type="button" id="tb-inspector" data-cmd="toggle-inspector" title="Toggle inspector">Inspector</button>
+          </div>
+        </div>
+        <div id="inspector" class="hidden" aria-label="Inspector">
+          <div class="inspector-head">Inspector</div>
+          <dl id="inspector-body"></dl>
+        </div>
         <div id="gap-warning" class="hidden">
           ⚠ Stream gap detected - missed seq <span id="gap-seqs"></span>.
           <button id="gap-replay">Replay</button>
@@ -48,12 +111,26 @@
           <button id="send">Send</button>
         </div>
         <div id="statusbar">
-          <span id="status-model">model: -</span>
-          <span id="status-quota">quota: -</span>
+          <span id="status-diag">envelopes: 0</span>
           <span id="status-queue" class="hidden"></span>
-          <span id="status-conn">● mock</span>
         </div>
       </main>
+    </div>
+    <div id="palette" class="hidden" aria-label="Command palette">
+      <div class="palette-box">
+        <input id="palette-input" type="text" placeholder="Type a command…" autocomplete="off" />
+        <ul id="palette-list"></ul>
+      </div>
+    </div>
+    <div id="ctxmenu" class="hidden">
+      <ul id="ctxmenu-list"></ul>
+    </div>
+    <div id="about-overlay" class="hidden">
+      <div class="about-card">
+        <h2>ZenCode Desktop</h2>
+        <p id="about-body"></p>
+        <button type="button" id="about-close">Close</button>
+      </div>
     </div>
     <script src="rategate.js"></script>
     <script src="rategate-mock.js"></script>

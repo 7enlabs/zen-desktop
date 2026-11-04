@@ -58,6 +58,7 @@ function renderSessions(filter = "") {
       li.innerHTML = `<span class="sess-title"></span><span class="sess-meta"></span>`;
       li.querySelector(".sess-title").textContent = s.title;
       li.querySelector(".sess-meta").textContent = `${s.model} · ${s.updated}`;
+      li.dataset.sessionId = s.id;
       li.onclick = () => selectSession(s.id);
       ul.appendChild(li);
     });
@@ -70,6 +71,7 @@ function selectSession(id) {
   state.expectedSeq = 0; state.assistantEl = null;
   hideGap();
   renderSessions(document.getElementById("session-search").value);
+  updateShellSession();
   if (typeof timelineSessionChanged === "function") timelineSessionChanged(id);
   if (state.mode === "live") replaySession(id); else playDemo();
 }
@@ -112,6 +114,7 @@ function flushBatch() {
   for (const env of batch) applyEnvelope(env);
   const box = document.getElementById("messages");
   box.scrollTop = box.scrollHeight;
+  updateDiag();
 }
 
 function showGap(got) {
@@ -465,6 +468,306 @@ function mockRespond(text) {
   ];
   reply.forEach((env, i) => { env.seq = base + i; setTimeout(() => onEnvelope(env), 300 * (i + 1)); });
 }
+
+
+/* Window shell added by the desktop design-audit fix: native menu events,
+   in-window menu bar, command palette, context menu, toolbar, inspector,
+   collapsible sidebar, density toggle, per-session window title. */
+
+const DENSITY_STATES = ["normal", "compact", "comfortable"];
+const DENSITY_LABELS = { normal: "Normal", compact: "Compact", comfortable: "Comfortable" };
+let densityIndex = 0;
+let paletteItems = [];
+let paletteIndex = 0;
+
+function shellStore(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+function shellRecall(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function clickById(id) { const el = document.getElementById(id); if (el) el.click(); }
+function focusById(id) { const el = document.getElementById(id); if (el) el.focus(); }
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  ta.remove();
+}
+
+function activeSessionObj() {
+  return state.sessions.find(s => s.id === state.activeSession) || null;
+}
+
+function updateWindowTitle() {
+  const s = activeSessionObj();
+  const title = s ? s.title + " \u2014 ZenCode Desktop" : "ZenCode Desktop";
+  document.title = title;
+  try {
+    const w = TAURI && window.__TAURI__ && window.__TAURI__.window;
+    if (w && typeof w.getCurrentWindow === "function") {
+      const win = w.getCurrentWindow();
+      if (win && typeof win.setTitle === "function") {
+        const p = win.setTitle(title);
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+    }
+  } catch (e) {}
+}
+
+function updateDiag() {
+  const el = document.getElementById("status-diag");
+  if (el) el.textContent = "envelopes: " + state.log.length + " \u00b7 seq: " + state.expectedSeq;
+}
+
+function updateShellSession() {
+  updateWindowTitle();
+  updateDiag();
+  const label = document.getElementById("tb-session");
+  const s = activeSessionObj();
+  if (label) label.textContent = s ? s.title : "No session";
+  const panel = document.getElementById("inspector");
+  if (panel && !panel.classList.contains("hidden")) renderInspector();
+}
+
+function setSidebarCollapsed(collapsed) {
+  document.getElementById("app").classList.toggle("sidebar-collapsed", collapsed);
+  const btn = document.getElementById("tb-sidebar");
+  if (btn) btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+  shellStore("zd-sidebar-collapsed", collapsed ? "1" : "0");
+}
+function toggleSidebar() {
+  setSidebarCollapsed(!document.getElementById("app").classList.contains("sidebar-collapsed"));
+}
+
+function setDensity(index) {
+  densityIndex = ((index % 3) + 3) % 3;
+  const name = DENSITY_STATES[densityIndex];
+  document.body.dataset.density = name;
+  const btn = document.getElementById("tb-density");
+  if (btn) btn.textContent = "Density: " + DENSITY_LABELS[name];
+  shellStore("zd-density", name);
+}
+function toggleDensity() { setDensity(densityIndex + 1); }
+
+function cycleSession(dir) {
+  if (!state.sessions.length) return;
+  const idx = state.sessions.findIndex(s => s.id === state.activeSession);
+  const next = (idx + dir + state.sessions.length) % state.sessions.length;
+  selectSession(state.sessions[next].id);
+}
+
+function renderInspector() {
+  const box = document.getElementById("inspector-body");
+  if (!box) return;
+  const s = activeSessionObj();
+  const rows = [
+    ["Session", s ? s.title + " (" + s.id + ")" : "none"],
+    ["Model", s ? s.model : "-"],
+    ["Mode", state.mode],
+    ["Workspace", state.mode === "live" ? LIVE_DEFAULTS.cwd : "mock demo (no engine)"],
+    ["Scope", state.mode === "live" ? "working directory only" : "not applicable (mock mode)"],
+    ["Envelopes", String(state.log.length)],
+    ["Expected seq", String(state.expectedSeq)],
+    ["Pending", String(state.pending.length)],
+  ];
+  box.innerHTML = "";
+  rows.forEach(r => {
+    const dt = document.createElement("dt");
+    dt.textContent = r[0];
+    const dd = document.createElement("dd");
+    dd.textContent = r[1];
+    box.append(dt, dd);
+  });
+}
+function toggleInspector() {
+  const panel = document.getElementById("inspector");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) renderInspector();
+}
+
+function showAbout() {
+  const overlay = document.getElementById("about-overlay");
+  const body = document.getElementById("about-body");
+  const s = activeSessionObj();
+  if (body) body.textContent = "ZenCode Desktop \u00b7 mode: " + state.mode + " \u00b7 session: " + (s ? s.title : "none");
+  if (overlay) overlay.classList.remove("hidden");
+}
+function hideAbout() {
+  const overlay = document.getElementById("about-overlay");
+  if (overlay) overlay.classList.add("hidden");
+}
+
+function closeMenus() {
+  document.querySelectorAll("#menubar .menu-drop").forEach(d => d.classList.add("hidden"));
+}
+function closePalette() {
+  const overlay = document.getElementById("palette");
+  if (overlay) overlay.classList.add("hidden");
+}
+function openPalette() {
+  const overlay = document.getElementById("palette");
+  if (!overlay) return;
+  overlay.classList.remove("hidden");
+  const input = document.getElementById("palette-input");
+  input.value = "";
+  paletteIndex = 0;
+  renderPalette("");
+  input.focus();
+}
+function renderPalette(filter) {
+  const list = document.getElementById("palette-list");
+  const q = filter.toLowerCase();
+  paletteItems = COMMANDS.filter(c => (c.label + " " + c.id).toLowerCase().includes(q));
+  if (paletteIndex >= paletteItems.length) paletteIndex = Math.max(0, paletteItems.length - 1);
+  list.innerHTML = "";
+  paletteItems.forEach((c, i) => {
+    const li = document.createElement("li");
+    li.dataset.cmd = c.id;
+    if (i === paletteIndex) li.classList.add("selected");
+    const name = document.createElement("span");
+    name.textContent = c.label;
+    const hint = document.createElement("span");
+    hint.className = "accel";
+    hint.textContent = c.hint;
+    li.append(name, hint);
+    list.appendChild(li);
+  });
+}
+
+const COMMANDS = [
+  { id: "new-session", label: "New Session", hint: "Ctrl/Cmd+N", run: () => clickById("new-session") },
+  { id: "open-palette", label: "Command Palette", hint: "Ctrl/Cmd+K", run: openPalette },
+  { id: "focus-composer", label: "Focus Composer", hint: "Ctrl/Cmd+L", run: () => focusById("input") },
+  { id: "focus-search", label: "Search Sessions", hint: "/", run: () => focusById("session-search") },
+  { id: "toggle-sidebar", label: "Toggle Sidebar", hint: "Ctrl/Cmd+B", run: toggleSidebar },
+  { id: "toggle-density", label: "Toggle Density", hint: "Ctrl/Cmd+Shift+D", run: toggleDensity },
+  { id: "toggle-inspector", label: "Toggle Inspector", hint: "", run: toggleInspector },
+  { id: "tab-chat", label: "Show Chat Tab", hint: "Ctrl/Cmd+1", run: () => clickById("tab-chat") },
+  { id: "tab-timeline", label: "Show Timeline Tab", hint: "Ctrl/Cmd+2", run: () => clickById("tab-timeline") },
+  { id: "tab-network", label: "Show Network Tab", hint: "Ctrl/Cmd+3", run: () => clickById("tab-network") },
+  { id: "tab-terminal", label: "Show Terminal Tab", hint: "Ctrl/Cmd+4", run: () => clickById("tab-terminal") },
+  { id: "next-session", label: "Next Session", hint: "", run: () => cycleSession(1) },
+  { id: "prev-session", label: "Previous Session", hint: "", run: () => cycleSession(-1) },
+  { id: "copy-session-id", label: "Copy Session ID", hint: "", run: () => { if (state.activeSession) copyText(state.activeSession); } },
+  { id: "about", label: "About ZenCode Desktop", hint: "", run: showAbout },
+];
+
+function runCommand(id) {
+  closeMenus();
+  closePalette();
+  const cmd = COMMANDS.find(c => c.id === id);
+  if (cmd) cmd.run();
+}
+
+function hideCtxMenu() {
+  const menu = document.getElementById("ctxmenu");
+  if (menu) menu.classList.add("hidden");
+}
+function showCtxMenu(x, y, items) {
+  const menu = document.getElementById("ctxmenu");
+  const ul = document.getElementById("ctxmenu-list");
+  ul.innerHTML = "";
+  items.forEach(it => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = it.label;
+    btn.addEventListener("click", () => { hideCtxMenu(); it.run(); });
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+  menu.classList.remove("hidden");
+}
+
+document.querySelectorAll("#menubar .menu-label").forEach(btn => {
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const drop = btn.parentElement.querySelector(".menu-drop");
+    const wasHidden = drop.classList.contains("hidden");
+    closeMenus();
+    if (wasHidden) drop.classList.remove("hidden");
+  });
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest("#menubar")) closeMenus();
+  if (!e.target.closest("#ctxmenu")) hideCtxMenu();
+  const cmdBtn = e.target.closest("[data-cmd]");
+  if (cmdBtn) runCommand(cmdBtn.dataset.cmd);
+});
+document.addEventListener("contextmenu", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  const msg = e.target.closest(".msg");
+  const sessLi = e.target.closest("#session-list li");
+  let items;
+  if (msg) {
+    const text = msg.textContent;
+    items = [
+      { label: "Copy Message Text", run: () => copyText(text) },
+      { label: "Copy Session ID", run: () => { if (state.activeSession) copyText(state.activeSession); } },
+    ];
+  } else if (sessLi && sessLi.dataset.sessionId) {
+    const sid = sessLi.dataset.sessionId;
+    items = [
+      { label: "Open Session", run: () => selectSession(sid) },
+      { label: "Copy Session ID", run: () => copyText(sid) },
+    ];
+  } else {
+    items = [
+      { label: "Command Palette", run: openPalette },
+      { label: "New Session", run: () => clickById("new-session") },
+    ];
+  }
+  e.preventDefault();
+  showCtxMenu(e.clientX, e.clientY, items);
+});
+document.addEventListener("keydown", e => {
+  const mod = e.metaKey || e.ctrlKey;
+  const typing = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA");
+  if (e.key === "Escape") { closeMenus(); closePalette(); hideCtxMenu(); hideAbout(); return; }
+  if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); openPalette(); return; }
+  if (mod && e.key.toLowerCase() === "n") { e.preventDefault(); runCommand("new-session"); return; }
+  if (mod && e.key.toLowerCase() === "b") { e.preventDefault(); toggleSidebar(); return; }
+  if (mod && e.key.toLowerCase() === "l") { e.preventDefault(); focusById("input"); return; }
+  if (mod && e.shiftKey && e.key.toLowerCase() === "d") { e.preventDefault(); toggleDensity(); return; }
+  if (mod && ["1", "2", "3", "4"].includes(e.key)) {
+    e.preventDefault();
+    runCommand(["tab-chat", "tab-timeline", "tab-network", "tab-terminal"][Number(e.key) - 1]);
+    return;
+  }
+  if (!mod && !typing && e.key === "/") { e.preventDefault(); focusById("session-search"); }
+});
+document.getElementById("palette-input").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); paletteIndex = Math.min(paletteIndex + 1, Math.max(0, paletteItems.length - 1)); renderPalette(e.target.value); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); paletteIndex = Math.max(0, paletteIndex - 1); renderPalette(e.target.value); }
+  else if (e.key === "Enter") { e.preventDefault(); const c = paletteItems[paletteIndex]; if (c) runCommand(c.id); }
+});
+document.getElementById("palette-input").addEventListener("input", e => { paletteIndex = 0; renderPalette(e.target.value); });
+
+(function initShell() {
+  setSidebarCollapsed(shellRecall("zd-sidebar-collapsed") === "1");
+  const savedDensity = shellRecall("zd-density");
+  setDensity(Math.max(0, DENSITY_STATES.indexOf(savedDensity)));
+  const aboutClose = document.getElementById("about-close");
+  if (aboutClose) aboutClose.addEventListener("click", hideAbout);
+  const aboutOverlay = document.getElementById("about-overlay");
+  if (aboutOverlay) aboutOverlay.addEventListener("click", e => { if (e.target === aboutOverlay) hideAbout(); });
+  const paletteOverlay = document.getElementById("palette");
+  if (paletteOverlay) paletteOverlay.addEventListener("click", e => { if (e.target === paletteOverlay) closePalette(); });
+  try {
+    const ev = TAURI && window.__TAURI__ && window.__TAURI__.event;
+    if (ev && typeof ev.listen === "function") {
+      ev.listen("menu-command", e => { if (typeof e.payload === "string") runCommand(e.payload); });
+    }
+  } catch (err) {}
+})();
 
 (async function boot() {
   if (TAURI && invoke) {
