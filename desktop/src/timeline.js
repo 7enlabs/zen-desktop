@@ -216,14 +216,14 @@ function renderTimeline() {
 
 async function undoEntry(entry) {
   if (!entry.checkpoint_id) return;
-  const ok = confirm("Undo \"" + entry.title + "\"?\n\nThis reverts the files via checkpoint " +
+  const ok = await confirmNative("Undo action", "Undo \"" + entry.title + "\"?\n\nThis reverts the files via checkpoint " +
     entry.checkpoint_id + ". A safety checkpoint is taken first, so you can undo this undo.");
   if (!ok) return;
   await doRestore(entry.checkpoint_id, "Undone: " + entry.title);
 }
 
 async function restoreTo(checkpointId) {
-  const ok = confirm("Restore the workspace to checkpoint " + checkpointId +
+  const ok = await confirmNative("Restore checkpoint", "Restore the workspace to checkpoint " + checkpointId +
     "?\n\nA safety checkpoint is taken first, so you can undo this restore.");
   if (!ok) return;
   await doRestore(checkpointId, "Restored to checkpoint " + checkpointId);

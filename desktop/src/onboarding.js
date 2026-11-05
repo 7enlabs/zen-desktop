@@ -11,6 +11,11 @@ const OnboardingStep = Object.freeze({
 
 const ONBOARDING_STORAGE_KEY = "zencode.onboarding.v1";
 
+// Endpoint + keyless flags verified 2026-11-05 from the work box (curl, no key):
+// - https://ai-gateway.kilo.ai/api/v1/models lists nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free;
+//   POST /chat/completions (max_tokens 1, "ping") returns 200, so keyless: true holds.
+// - https://api.blazerail.com/v1/models lists deepseek/deepseek-v4.1-flash:free;
+//   POST /chat/completions without a key returns 401, so keyless: false holds.
 const FREE_MODELS = Object.freeze([
   {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
