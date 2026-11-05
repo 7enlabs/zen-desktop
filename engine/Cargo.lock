@@ -1726,7 +1726,7 @@ dependencies = [
 [[package]]
 name = "zen-agent"
 version = "0.1.0"
-source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
+source = "git+https://github.com/7enlab/zencode.git?rev=b8b9574#b8b9574db44389b5a68619564aedd9f1f24cf44a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1743,7 +1743,7 @@ dependencies = [
 [[package]]
 name = "zen-core"
 version = "0.1.0"
-source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
+source = "git+https://github.com/7enlab/zencode.git?rev=b8b9574#b8b9574db44389b5a68619564aedd9f1f24cf44a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1754,7 +1754,7 @@ dependencies = [
 [[package]]
 name = "zen-tools"
 version = "0.1.0"
-source = "git+https://github.com/7enlab/zencode.git?rev=290154c#290154c1da24e482cd888f7099a01b036597c15f"
+source = "git+https://github.com/7enlab/zencode.git?rev=b8b9574#b8b9574db44389b5a68619564aedd9f1f24cf44a"
 dependencies = [
  "anyhow",
  "async-trait",
