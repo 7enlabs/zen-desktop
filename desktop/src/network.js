@@ -119,12 +119,35 @@ function renderNetwork() {
   panel.appendChild(note);
 }
 
-// NOTE (G5): this still uses an anchor download, not the native save dialog.
-// A native save needs plugin:dialog|save + plugin:fs|write_text_file, and the
-// write needs the fs:allow-write-text-file capability (scope decision for the
-// Leader) - see the B-1 handoff. Do not switch to the dialog before that lands.
-function downloadJson(filename, obj) {
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+// Native save (G5, Leader tin 5907): capability fs:allow-write-text-file is
+// scoped to $DOWNLOAD/* only. The save dialog asks the user where to save;
+// if the picked path is outside $DOWNLOAD the fs write is denied by scope,
+// and we fall back to the anchor download so the export still lands
+// (the browser download folder is $DOWNLOAD by default). Write only runs
+// when the user clicks export - never from agent code.
+async function downloadJson(filename, obj) {
+  const text = JSON.stringify(obj, null, 2);
+  if (typeof invoke === "function" && invoke) {
+    try {
+      const path = await invoke("plugin:dialog|save", {
+        options: {
+          title: "Save " + filename,
+          defaultPath: filename,
+          filters: [{ name: "JSON", extensions: ["json"] }],
+        },
+      });
+      if (path) {
+        await invoke("plugin:fs|write_text_file", new TextEncoder().encode(text), {
+          headers: { path: encodeURIComponent(path) },
+        });
+        return;
+      }
+      return; // User cancelled the dialog: no file, no fallback.
+    } catch (e) {
+      console.warn("native save failed, falling back to anchor download:", e);
+    }
+  }
+  const blob = new Blob([text], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
