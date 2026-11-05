@@ -12,3 +12,4 @@ Source: Google Fonts, SIL Open Font License 1.1.
 
 Referenced from src/styles.css with relative urls, so Tauri bundles
 them with frontendDist (src/). No network fetch at runtime.
+License texts: OFL-BeVietnamPro.txt and OFL-NotoSans.txt are the verbatim SIL Open Font License 1.1 texts distributed upstream with each family.
