@@ -119,6 +119,10 @@ function renderNetwork() {
   panel.appendChild(note);
 }
 
+// NOTE (G5): this still uses an anchor download, not the native save dialog.
+// A native save needs plugin:dialog|save + plugin:fs|write_text_file, and the
+// write needs the fs:allow-write-text-file capability (scope decision for the
+// Leader) - see the B-1 handoff. Do not switch to the dialog before that lands.
 function downloadJson(filename, obj) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -138,7 +142,7 @@ async function exportNetworkLog() {
 }
 
 async function clearNetworkLog() {
-  if (!confirm("Delete the local network log? This cannot be undone.")) return;
+  if (!(await confirmNative("Clear network log", "Delete the local network log? This cannot be undone."))) return;
   if (typeof invoke === "function" && invoke) {
     try { await invoke("clear_network_log"); } catch (e) { console.warn("clear_network_log failed:", e); }
   }
