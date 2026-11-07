@@ -579,7 +579,7 @@ mod tests {
             "https://api.openai.com/v1/chat/completions",
             "https://example.com:443/x?key=secret",
             "http://192.168.1.10:11434/v1",
-            "https://user:pass@api.example.com/v1",
+            "https://user:pass@api.example.com/v1", // trufflehog:ignore -- test fixture only, example URL, no real credentials; gitleaks:allow
             "not-a-url",
             "",
         ] {
