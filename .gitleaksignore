@@ -1,0 +1,22 @@
+# Gitleaks baseline for zencode-desktop: fingerprints of reviewed findings.
+# Format: commit:file:rule:line. Add an entry only after review, never to
+# silence a real secret (rotate it instead).
+#
+# The 3 entries below are the known TruffleHog false positives from
+# quet-trufflehog-3repo-2026-11-06.md (detector URI): the fixture URL
+# https://user:****@api.example.com/v1 in the test
+# sovereign_blocks_remote_urls at engine/src/sovereign.rs line 701 in
+# those commits (same line is at line 582 on current HEAD).
+#
+# PREP NOTE (2026-11-07, must be settled before merge): a local full-history
+# gitleaks 8.30.1 scan of this repo (all refs, 255 non-merge commits,
+# --redact) produced ZERO findings - gitleaks default rules do not flag
+# user:pass@example.com, so gitleaks never emitted these fingerprints and
+# the rule component below is provisional (generic-api-key, the rule used
+# for the analogous fixture in 7enlabs/zencode's baseline). If a future
+# gitleaks run flags this line, replace the rule with the actual RuleID
+# from that run. These entries can only ever match this exact fixture
+# line in these exact commits; they cannot silence any other finding.
+10711d3088f953c972e63c66ab7fac34997ffbb3:engine/src/sovereign.rs:generic-api-key:701
+16dd42a7a54eb0a24bec7c48bac55fa887f5eba0:engine/src/sovereign.rs:generic-api-key:701
+2aab2784ff0cdf4ca68323ab7d5a80103f840326:engine/src/sovereign.rs:generic-api-key:701
