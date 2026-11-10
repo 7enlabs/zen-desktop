@@ -444,6 +444,77 @@ pub fn estimate_input_tokens(prompt: &str, system_prompt: &str) -> u64 {
     estimate_tokens(prompt) + estimate_tokens(system_prompt)
 }
 
+/// Backoff between spawn attempts when the binary file is busy (ETXTBSY),
+/// Unix only. execve fails with ETXTBSY while the binary file is open for
+/// writing: a test that just rewrote the fake `zen` script, or a CLI
+/// binary being replaced on disk. The writer releases it within
+/// milliseconds, so a short bounded retry is safe. Only ETXTBSY is
+/// retried, and the added latency stays under a second.
+#[cfg(unix)]
+const SPAWN_ETXTBSY_BACKOFF: &[Duration] = &[
+    Duration::from_millis(50),
+    Duration::from_millis(100),
+    Duration::from_millis(200),
+    Duration::from_millis(400),
+];
+
+/// Spawn the child process, retrying only when execve reports the binary
+/// file busy (ETXTBSY, Unix only). `build_cmd` must build an equivalent
+/// command on every call: `std::process::Command` is consumed by each
+/// spawn attempt.
+async fn spawn_child(
+    binary: &Path,
+    build_cmd: impl Fn() -> std::process::Command,
+) -> anyhow::Result<Child> {
+    let mut attempt = 0usize;
+    loop {
+        match Command::from(build_cmd()).spawn() {
+            Ok(child) => return Ok(child),
+            Err(e) if is_spawn_busy(&e) => match spawn_backoff(attempt) {
+                Some(delay) => {
+                    tokio::time::sleep(delay).await;
+                    attempt += 1;
+                }
+                None => {
+                    return Err(anyhow::anyhow!("failed to spawn {}: {e}", binary.display()));
+                }
+            },
+            Err(e) => {
+                return Err(anyhow::anyhow!("failed to spawn {}: {e}", binary.display()));
+            }
+        }
+    }
+}
+
+/// True only for ETXTBSY on Unix: execve failed because the binary file
+/// is open for writing. False everywhere else (this error does not occur
+/// on Windows).
+fn is_spawn_busy(e: &std::io::Error) -> bool {
+    #[cfg(unix)]
+    {
+        e.raw_os_error() == Some(libc::ETXTBSY)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = e;
+        false
+    }
+}
+
+/// Backoff before spawn attempt `attempt` (0-based) after ETXTBSY, or
+/// `None` once attempts are exhausted. Unix only; `None` everywhere else.
+fn spawn_backoff(attempt: usize) -> Option<Duration> {
+    #[cfg(unix)]
+    {
+        SPAWN_ETXTBSY_BACKOFF.get(attempt).copied()
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = attempt;
+        None
+    }
+}
+
 /// Run one attempt with the given model. Public entry is [`run_cli_task`],
 /// which retries on model/provider failure with the fallback models.
 async fn run_attempt(
@@ -506,25 +577,28 @@ async fn run_attempt(
     let cli_session_id = uuid::Uuid::new_v4().to_string();
     let argv = build_argv(opts, &cli_session_id, prompt);
 
-    let mut std_cmd = std::process::Command::new(binary);
-    std_cmd
-        .args(&argv)
-        .current_dir(&opts.cwd)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        // Own process group so Ctrl-C in send_interrupt hits only the child.
-        std_cmd.creation_flags(0x0000_0200);
-    }
-    if let Some(key) = &opts.api_key {
-        std_cmd.env("ZEN_API_KEY", key);
-    }
-    let mut child = Command::from(std_cmd)
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("failed to spawn {}: {e}", binary.display()))?;
+    // Built fresh per spawn attempt: `spawn_child` retries ETXTBSY, and a
+    // `std::process::Command` is consumed by each attempt.
+    let build_cmd = || {
+        let mut std_cmd = std::process::Command::new(binary);
+        std_cmd
+            .args(&argv)
+            .current_dir(&opts.cwd)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            // Own process group so Ctrl-C in send_interrupt hits only the child.
+            std_cmd.creation_flags(0x0000_0200);
+        }
+        if let Some(key) = &opts.api_key {
+            std_cmd.env("ZEN_API_KEY", key);
+        }
+        std_cmd
+    };
+    let mut child = spawn_child(binary, build_cmd).await?;
     let pid = child.id().unwrap_or(0);
     handle.set_pid(pid);
 
@@ -1007,5 +1081,63 @@ mod tests {
     fn input_estimate_is_chars_over_four() {
         assert_eq!(estimate_input_tokens("abcdefgh", ""), 2);
         assert_eq!(estimate_input_tokens("", "abcd"), 1);
+    }
+
+    /// The spawn retry must wait out a writer holding the binary open:
+    /// every attempt inside the hold window fails with ETXTBSY, so without
+    /// the retry this test fails deterministically.
+    #[tokio::test]
+    #[cfg(unix)]
+    async fn spawn_retries_when_binary_is_busy() {
+        let dir = std::env::temp_dir().join("zencode-spawn-retry-test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let script = dir.join("zen");
+        {
+            let mut f = std::fs::File::create(&script).unwrap();
+            f.write_all(b"#!/bin/sh\nexit 0\n").unwrap();
+        }
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        // Hold the script open for writing for ~100ms. The channel proves
+        // the writer has the file open before the first spawn attempt.
+        let (tx, rx) = std::sync::mpsc::channel();
+        let held = script.clone();
+        let writer = std::thread::spawn(move || {
+            let _f = std::fs::OpenOptions::new().write(true).open(&held).unwrap();
+            tx.send(()).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        });
+        rx.recv().unwrap();
+        let mut child = spawn_child(&script, || {
+            let mut c = std::process::Command::new(&script);
+            c.stdout(std::process::Stdio::null());
+            c
+        })
+        .await
+        .unwrap();
+        let status = child.wait().await.unwrap();
+        assert!(status.success());
+        writer.join().unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Any other spawn error must fail at once, without burning the retry
+    /// backoff: a missing binary returns in milliseconds.
+    #[tokio::test]
+    async fn spawn_does_not_retry_other_errors() {
+        let missing = std::env::temp_dir().join("zencode-no-such-binary-xyz");
+        let started = std::time::Instant::now();
+        let err = spawn_child(&missing, || std::process::Command::new(&missing))
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("failed to spawn"), "{err}");
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(500),
+            "missing binary must fail at once, took {:?}",
+            started.elapsed()
+        );
     }
 }

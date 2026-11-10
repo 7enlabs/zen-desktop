@@ -19,9 +19,16 @@ use zencode_engine::RunOptions;
 /// Sequence number making each temp script name unique within a process.
 static WRITE_SEQ: AtomicU64 = AtomicU64::new(0);
 
+/// Sequence number making each tmpdir unique within a process.
+static DIR_SEQ: AtomicU64 = AtomicU64::new(0);
+
 pub fn tmpdir(tag: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("zen_fake_{tag}_{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&d);
+    // A fresh directory per call: never remove a path another test (or a
+    // still-running child) may be using, and never reuse a path an earlier
+    // call in this process used. The tag keeps the directory readable in
+    // failure output; pid + sequence make it unique.
+    let seq = DIR_SEQ.fetch_add(1, Ordering::SeqCst);
+    let d = std::env::temp_dir().join(format!("zen_fake_{tag}_{}_{seq}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d
 }
