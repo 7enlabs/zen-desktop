@@ -195,3 +195,12 @@ async fn scope_violation_stops_run() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn tmpdir_is_unique_per_call() {
+    let first = fake_zen::tmpdir("unique");
+    let second = fake_zen::tmpdir("unique");
+    assert_ne!(first, second, "same tag must not reuse a directory");
+    let _ = std::fs::remove_dir_all(&first);
+    let _ = std::fs::remove_dir_all(&second);
+}
