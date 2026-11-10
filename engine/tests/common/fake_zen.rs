@@ -11,9 +11,13 @@
 #![allow(dead_code)]
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use zencode_engine::scope::ScopeDecl;
 use zencode_engine::RunOptions;
+
+/// Sequence number making each temp script name unique within a process.
+static WRITE_SEQ: AtomicU64 = AtomicU64::new(0);
 
 pub fn tmpdir(tag: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("zen_fake_{tag}_{}", std::process::id()));
@@ -24,12 +28,25 @@ pub fn tmpdir(tag: &str) -> PathBuf {
 
 pub fn write_script(dir: &Path, name: &str, body: &str) -> PathBuf {
     let path = dir.join(name);
-    std::fs::write(&path, body).unwrap();
+    // Write to a temp file in the same directory, then rename it into
+    // place, so the destination path is never observed half-written:
+    // exec'ing a script while it is still open for writing fails with
+    // ETXTBSY ("Text file busy") on Linux, which flaked these tests.
+    // The temp name is unique per call so parallel tests cannot collide.
+    let seq = WRITE_SEQ.fetch_add(1, Ordering::SeqCst);
+    let tmp_path = dir.join(format!(".{name}.tmp-{}-{seq}", std::process::id()));
+    {
+        use std::io::Write;
+        let mut file = std::fs::File::create(&tmp_path).unwrap();
+        file.write_all(body.as_bytes()).unwrap();
+        file.sync_all().unwrap();
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(&tmp_path, std::fs::Permissions::from_mode(0o755)).unwrap();
     }
+    std::fs::rename(&tmp_path, &path).unwrap();
     path
 }
 
