@@ -152,20 +152,65 @@ pub struct StreamUsage {
     pub output_tokens: u64,
 }
 
+/// Payload of a `system` line. Kept in its own struct and boxed inside
+/// [`CliStreamEvent::System`]: twenty-odd optional fields make the inline
+/// variant ~360 bytes, which trips clippy's `large_enum_variant` lint.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CliSystemEvent {
+    pub subtype: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    /// Tool names offered to the model, in registry order (on `init`).
+    #[serde(default)]
+    pub tools: Vec<String>,
+    #[serde(default)]
+    pub model: Option<String>,
+    // --- `system` subtype payloads (docs/stream-json-v1.md) ---
+    // `api_retry`: 1-based retry number, retry cap, wait before retry,
+    // HTTP status (null for network errors), short error text.
+    #[serde(default)]
+    pub attempt: Option<u32>,
+    #[serde(default)]
+    pub max_retries: Option<u32>,
+    #[serde(default)]
+    pub retry_delay_ms: Option<u64>,
+    #[serde(default)]
+    pub error_status: Option<u16>,
+    #[serde(default)]
+    pub error: Option<String>,
+    // `permission_denied` / `tool_progress`: tool name and call id.
+    #[serde(default)]
+    pub tool_name: Option<String>,
+    #[serde(default)]
+    pub tool_use_id: Option<String>,
+    // `permission_denied`: why the call was refused.
+    #[serde(default)]
+    pub decision_reason: Option<String>,
+    // `compact_boundary`: "auto" | "manual", prompt tokens before compaction.
+    #[serde(default)]
+    pub trigger: Option<String>,
+    #[serde(default)]
+    pub pre_tokens: Option<u64>,
+    // `hook_message`: hook event name and the user-facing message.
+    #[serde(default)]
+    pub hook_event_name: Option<String>,
+    #[serde(default)]
+    pub message: Option<String>,
+    // `tool_progress`: wall time since the tool call started.
+    #[serde(default)]
+    pub elapsed_ms: Option<u64>,
+    // `prune`: tool results replaced with summaries, tokens saved.
+    #[serde(default)]
+    pub pruned: Option<u64>,
+    #[serde(default)]
+    pub tokens_saved: Option<u64>,
+}
+
 /// One stream-json line's payload, keyed by its `type` tag.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CliStreamEvent {
-    System {
-        subtype: String,
-        #[serde(default)]
-        session_id: Option<String>,
-        /// Tool names offered to the model, in registry order (on `init`).
-        #[serde(default)]
-        tools: Vec<String>,
-        #[serde(default)]
-        model: Option<String>,
-    },
+    System(Box<CliSystemEvent>),
     Assistant {
         message: StreamMessage,
     },
@@ -193,6 +238,14 @@ pub enum CliStreamEvent {
         /// per docs/stream-json-v1.md).
         #[serde(default)]
         model: Option<String>,
+    },
+    /// A `stream_event` line (only emitted with `--include-partial-messages`,
+    /// which the Desktop never passes). The nested `event` carries a
+    /// `content_block_delta` whose `text_delta` is provisional: the full
+    /// `assistant` record that follows is authoritative and replaces it.
+    StreamEvent {
+        #[serde(default)]
+        event: Value,
     },
     /// A line type this parser does not know. The raw `type` tag is kept on
     /// [`CliLine::line_type`]; the event surfaces as `DesktopEvent::Unknown`.
@@ -285,27 +338,68 @@ fn tool_result_text(content: &Value) -> String {
 /// [`DesktopEvent::Unknown`], so a CLI change can never silently vanish.
 pub fn to_desktop_events(line: &CliLine) -> Vec<DesktopEvent> {
     match &line.event {
-        CliStreamEvent::System {
-            subtype,
-            session_id,
-            tools,
-            model,
-        } => {
-            let mut text = format!("subtype={subtype}");
-            if let Some(id) = session_id {
-                text.push_str(&format!(" session={id}"));
+        CliStreamEvent::System(sys) => match sys.subtype.as_str() {
+            "api_retry" => vec![DesktopEvent::ApiRetry {
+                attempt: sys.attempt.unwrap_or(0),
+                max_retries: sys.max_retries.unwrap_or(0),
+                retry_delay_ms: sys.retry_delay_ms.unwrap_or(0),
+                error_status: sys.error_status,
+                error: sys.error.clone().unwrap_or_default(),
+            }],
+            "permission_denied" => vec![DesktopEvent::PermissionDenied {
+                tool_name: sys.tool_name.clone().unwrap_or_default(),
+                tool_use_id: sys.tool_use_id.clone().unwrap_or_default(),
+            }],
+            "compact_boundary" => vec![DesktopEvent::CompactBoundary {
+                trigger: sys.trigger.clone().unwrap_or_default(),
+                pre_tokens: sys.pre_tokens.unwrap_or(0),
+            }],
+            "hook_message" => {
+                let text = match (&sys.hook_event_name, &sys.message) {
+                    (Some(hook), Some(msg)) => format!("{hook}: {msg}"),
+                    (Some(hook), None) => hook.clone(),
+                    (None, Some(msg)) => msg.clone(),
+                    (None, None) => String::new(),
+                };
+                vec![DesktopEvent::SystemMessage {
+                    event: "cli_system:hook_message".to_string(),
+                    text,
+                }]
             }
-            if let Some(m) = model {
-                text.push_str(&format!(" model={m}"));
+            "tool_progress" => vec![DesktopEvent::SystemMessage {
+                event: "cli_system:tool_progress".to_string(),
+                text: format!(
+                    "tool {} ({}) still running, {}ms elapsed",
+                    sys.tool_name.clone().unwrap_or_default(),
+                    sys.tool_use_id.clone().unwrap_or_default(),
+                    sys.elapsed_ms.unwrap_or(0)
+                ),
+            }],
+            "prune" => vec![DesktopEvent::SystemMessage {
+                event: "cli_system:prune".to_string(),
+                text: format!(
+                    "pruned {} tool results, {} tokens saved",
+                    sys.pruned.unwrap_or(0),
+                    sys.tokens_saved.unwrap_or(0)
+                ),
+            }],
+            _ => {
+                let mut text = format!("subtype={}", sys.subtype);
+                if let Some(id) = &sys.session_id {
+                    text.push_str(&format!(" session={id}"));
+                }
+                if let Some(m) = &sys.model {
+                    text.push_str(&format!(" model={m}"));
+                }
+                if !sys.tools.is_empty() {
+                    text.push_str(&format!(" tools={}", sys.tools.len()));
+                }
+                vec![DesktopEvent::SystemMessage {
+                    event: format!("cli_system:{}", sys.subtype),
+                    text,
+                }]
             }
-            if !tools.is_empty() {
-                text.push_str(&format!(" tools={}", tools.len()));
-            }
-            vec![DesktopEvent::SystemMessage {
-                event: format!("cli_system:{subtype}"),
-                text,
-            }]
-        }
+        },
         CliStreamEvent::Assistant { message } => {
             let text: String = message
                 .content
@@ -383,6 +477,22 @@ pub fn to_desktop_events(line: &CliLine) -> Vec<DesktopEvent> {
                 claims_unverified: 0,
                 claims_contradicted: 0,
             }]
+        }
+        CliStreamEvent::StreamEvent { event } => {
+            // Provisional delta only: the full `assistant` record that
+            // follows is authoritative and replaces this text (never append
+            // twice). Without `--include-partial-messages` this never arrives.
+            let text = event
+                .get("delta")
+                .and_then(|d| d.get("text"))
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            match text {
+                Some(text) => vec![DesktopEvent::TextDelta { text }],
+                None => vec![DesktopEvent::Unknown {
+                    variant: "cli_stream:stream_event".to_string(),
+                }],
+            }
         }
         CliStreamEvent::Unknown => vec![DesktopEvent::Unknown {
             variant: format!("cli_stream:{}", line.line_type),

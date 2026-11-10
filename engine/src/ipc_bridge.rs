@@ -2,9 +2,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use zen_core::{AgentEvent, EventSink};
 
-use crate::events::{parse_ndjson, DesktopEvent, Envelope, SCHEMA_VERSION};
+use crate::events::{parse_ndjson, DesktopEvent, DesktopEventSink, Envelope, SCHEMA_VERSION};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IpcEnvelope {
@@ -135,12 +134,11 @@ impl Default for BridgeSink {
     }
 }
 
-impl EventSink for BridgeSink {
-    fn emit(&self, ev: AgentEvent) {
-        let event = DesktopEvent::from(ev);
+impl DesktopEventSink for BridgeSink {
+    fn emit_desktop(&self, ev: DesktopEvent) {
         let seq = self.seq.fetch_add(1, Ordering::SeqCst);
 
-        if let Ok(env) = IpcEnvelope::new(seq, &event) {
+        if let Ok(env) = IpcEnvelope::new(seq, &ev) {
             self.log.lock().unwrap_or_else(|e| e.into_inner()).push(env);
         }
     }
@@ -231,7 +229,7 @@ mod tests {
     fn bridge_sink_seq_is_monotonic() {
         let sink = BridgeSink::new();
         for i in 0..5 {
-            sink.emit(AgentEvent::TextDelta {
+            sink.emit_desktop(DesktopEvent::TextDelta {
                 text: format!("t{i}"),
             });
         }
@@ -243,15 +241,15 @@ mod tests {
     #[test]
     fn bridge_sink_ndjson_roundtrip() {
         let sink = BridgeSink::new();
-        sink.emit(AgentEvent::TextDelta { text: "a".into() });
-        sink.emit(AgentEvent::TextDelta { text: "b".into() });
+        sink.emit_desktop(DesktopEvent::TextDelta { text: "a".into() });
+        sink.emit_desktop(DesktopEvent::TextDelta { text: "b".into() });
         let ndjson = sink.to_ndjson().unwrap();
         assert_eq!(ndjson.lines().count(), 2);
 
         let restored = BridgeSink::from_ndjson(&ndjson).unwrap();
         assert_eq!(restored.envelopes().len(), 2);
 
-        restored.emit(AgentEvent::TextDelta { text: "c".into() });
+        restored.emit_desktop(DesktopEvent::TextDelta { text: "c".into() });
         let seqs: Vec<u64> = restored.envelopes().iter().map(|e| e.seq).collect();
         assert_eq!(seqs, vec![0, 1, 2]);
     }
@@ -260,7 +258,7 @@ mod tests {
     fn get_log_since_returns_tail() {
         let sink = BridgeSink::new();
         for i in 0..5 {
-            sink.emit(AgentEvent::TextDelta {
+            sink.emit_desktop(DesktopEvent::TextDelta {
                 text: format!("t{i}"),
             });
         }

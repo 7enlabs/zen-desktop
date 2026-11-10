@@ -789,7 +789,7 @@ fn tier2_additive_fields_do_not_change_result() {
     let lines = tier2_parsed("22_unknown_field_on_known_type.jsonl");
     assert_eq!(lines.len(), 2);
     match &lines[0].event {
-        CliStreamEvent::System { subtype, .. } => assert_eq!(subtype, "init"),
+        CliStreamEvent::System(sys) => assert_eq!(sys.subtype, "init"),
         other => panic!("22 first: expected System, got {other:?}"),
     }
     match &lines[1].event {

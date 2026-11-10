@@ -1,209 +1,160 @@
+//! Convergence guard through the subprocess run loop (Unix only — the fake
+//! `zen` is a shell script; Windows coverage is the Leader's step-8 PC run).
+//! The guard observes the event stream; the first detected loop stops the
+//! child process and the pattern is reported. Re-plan injection into the
+//! agent loop is gone by design: the loop lives in the CLI process, across
+//! the process boundary, so the Desktop cannot inject a new prompt into it.
+
+#![cfg(unix)]
+
+#[path = "common/fake_zen.rs"]
+mod fake_zen;
+
 use std::sync::Arc;
 
-use serde_json::{json, Value};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
+use zencode_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
 use zencode_engine::convergence::ConvergencePolicy;
 use zencode_engine::events::RecordingSink;
-use zencode_engine::{run_task_with_sink, RunOptions};
-
-async fn serve(replies: Vec<Value>) -> (String, Arc<std::sync::Mutex<Vec<Value>>>) {
-    let l = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let url = format!("http://{}/v1", l.local_addr().unwrap());
-    let seen = Arc::new(std::sync::Mutex::new(vec![]));
-    let seen2 = seen.clone();
-    let replies = Arc::new(std::sync::Mutex::new(replies.into_iter()));
-    tokio::spawn(async move {
-        loop {
-            let (mut s, _) = l.accept().await.unwrap();
-            let seen = seen2.clone();
-            let replies = replies.clone();
-            tokio::spawn(async move {
-                let mut buf = Vec::new();
-                let mut tmp = [0u8; 8192];
-                let body_start;
-                let len;
-                loop {
-                    let n = s.read(&mut tmp).await.unwrap();
-                    if n == 0 {
-                        return;
-                    }
-                    buf.extend_from_slice(&tmp[..n]);
-                    if let Some(p) = buf.windows(4).position(|w| w == b"\r\n\r\n") {
-                        let head = String::from_utf8_lossy(&buf[..p]).to_lowercase();
-                        len = head
-                            .lines()
-                            .find_map(|l| {
-                                l.strip_prefix("content-length:")
-                                    .map(|v| v.trim().parse::<usize>().unwrap())
-                            })
-                            .unwrap_or(0);
-                        body_start = p + 4;
-                        break;
-                    }
-                }
-                while buf.len() < body_start + len {
-                    let n = s.read(&mut tmp).await.unwrap();
-                    if n == 0 {
-                        break;
-                    }
-                    buf.extend_from_slice(&tmp[..n]);
-                }
-                let req: Value =
-                    serde_json::from_slice(&buf[body_start..body_start + len]).unwrap();
-                seen.lock().unwrap().push(req);
-                let next = replies.lock().unwrap().next();
-                let (status, body) = match next {
-                    Some(b) => ("200 OK", b.to_string()),
-                    None => (
-                        "500 Internal Server Error",
-                        "{\"error\":\"script exhausted\"}".into(),
-                    ),
-                };
-                let resp = format!(
-                    "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
-                    body.len()
-                );
-                let _ = s.write_all(resp.as_bytes()).await;
-            });
-        }
-    });
-    (url, seen)
-}
-
-fn tool_reply(id: &str, name: &str, args: Value) -> Value {
-    json!({"id":"x","object":"chat.completion","choices":[{"index":0,"finish_reason":"tool_calls","message":{
-        "role":"assistant","content":null,
-        "tool_calls":[{"id":id,"type":"function","function":{"name":name,"arguments":args.to_string()}}]}}],
-        "usage":{"prompt_tokens":20,"completion_tokens":8,"total_tokens":28}})
-}
-
-fn text_reply(t: &str) -> Value {
-    json!({"id":"x","object":"chat.completion","choices":[{"index":0,"finish_reason":"stop","message":{
-        "role":"assistant","content":t}}],
-        "usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}})
-}
-
-fn tmpdir(tag: &str) -> std::path::PathBuf {
-    let d = std::env::temp_dir().join(format!("zen_converge_{tag}_{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&d);
-    std::fs::create_dir_all(&d).unwrap();
-    d
-}
-
-fn failing_build(id: &str) -> Value {
-    tool_reply(
-        id,
-        "Bash",
-        json!({"command": "echo 'error[E0425]: cannot find value `x` in this scope' >&2; exit 1"}),
-    )
-}
 
 fn count(ndjson: &str, needle: &str) -> usize {
     ndjson.lines().filter(|l| l.contains(needle)).count()
 }
 
-#[cfg(unix)]
+fn edit_assistant(id: &str) -> String {
+    format!(
+        r#"{{"v":1,"type":"assistant","message":{{"role":"assistant","tool_calls":[{{"id":"{id}","type":"function","function":{{"name":"Edit","arguments":"{{\"file_path\": \"src/main.rs\", \"old_string\": \"a\", \"new_string\": \"b\"}}"}}}}]}}}}"#
+    )
+}
+
+fn bash_assistant(id: &str) -> String {
+    format!(
+        r#"{{"v":1,"type":"assistant","message":{{"role":"assistant","tool_calls":[{{"id":"{id}","type":"function","function":{{"name":"Bash","arguments":"{{\"command\": \"cargo test\"}}"}}}}]}}}}"#
+    )
+}
+
+fn tool_result(id: &str, content: &str, is_error: bool) -> String {
+    format!(
+        r#"{{"v":1,"type":"user","message":{{"role":"user","content":[{{"type":"tool_result","tool_use_id":"{id}","content":"{content}","is_error":{is_error}}}]}}}}"#
+    )
+}
+
+fn init_line() -> String {
+    r#"{"v":1,"type":"system","subtype":"init","session_id":"00000000-0000-4000-8000-000000000001","tools":["Edit","Bash"],"model":"mock-model:free"}"#.to_string()
+}
+
+fn result_line(text: &str) -> String {
+    format!(
+        r#"{{"v":1,"type":"result","subtype":"success","is_error":false,"result":"{text}","session_id":"00000000-0000-4000-8000-000000000001","num_turns":3,"usage":{{"input_tokens":30,"output_tokens":5}},"model":"mock-model:free"}}"#
+    )
+}
+
 #[tokio::test]
-async fn looping_tool_triggers_replan_then_stop() {
-    let dir = tmpdir("loop");
-
-    let replies: Vec<Value> = (1..=7).map(|i| failing_build(&format!("c{i}"))).collect();
-    let (url, seen) = serve(replies).await;
+async fn looping_edits_stop_the_run() {
+    let dir = fake_zen::tmpdir("loop");
+    // 3 rounds of Edit(src/main.rs) + failing Bash verify.
+    let mut lines = vec![init_line()];
+    for i in 1..=3 {
+        lines.push(edit_assistant(&format!("e{i}")));
+        lines.push(tool_result(&format!("e{i}"), "edit ok", false));
+        lines.push(bash_assistant(&format!("b{i}")));
+        lines.push(tool_result(
+            &format!("b{i}"),
+            "error[E0425]: cannot find value `x`",
+            true,
+        ));
+    }
+    lines.push(result_line("Build fixed."));
+    let binary = fake_zen::stream_script(&dir, &lines.join("\n"));
     let sink = Arc::new(RecordingSink::new());
-    let mut opts = RunOptions::new(url, "fake/model:free", &dir);
-    opts.dangerous_allow_all = true;
-    opts.max_turns = 20;
+    let mut opts = fake_zen::base_opts(&dir);
     opts.convergence = Some(ConvergencePolicy::default());
-    let res = run_task_with_sink(&opts, "make the build pass", sink.clone())
-        .await
-        .unwrap();
-
-    assert!(res.is_error, "guard must end the task as an error");
+    let handle = CliRunHandle::new();
+    let outcome = run_cli_task_with_binary(
+        &opts,
+        "make the build pass",
+        sink.clone(),
+        &handle,
+        Some(binary),
+    )
+    .await
+    .unwrap();
+    assert!(!outcome.success, "guard must end the task as failed");
     assert!(
-        res.result.contains("convergence guard"),
+        outcome.result.contains("convergence guard"),
         "result names the guard: {}",
-        res.result
+        outcome.result
     );
+    assert!(outcome.result.contains("src/main.rs"), "{}", outcome.result);
     let log = sink.to_ndjson().unwrap();
-    assert_eq!(count(&log, "loop_detected"), 2, "{log}");
+    assert_eq!(count(&log, "loop_detected"), 1, "{log}");
     assert_eq!(count(&log, "convergence_stop"), 1, "{log}");
-
-    let reqs = seen.lock().unwrap();
-
-    assert_eq!(reqs.len(), 7, "model calls that reached the server");
-
-    let fifth = serde_json::to_string(&reqs[4]["messages"]).unwrap();
-    assert!(
-        fifth.contains("CONVERGENCE GUARD"),
-        "re-plan prompt reached the model"
-    );
-    let fourth = serde_json::to_string(&reqs[3]["messages"]).unwrap();
-    assert!(
-        !fourth.contains("CONVERGENCE GUARD"),
-        "not before the loop fired"
-    );
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-#[cfg(unix)]
 #[tokio::test]
 async fn guard_is_opt_in_and_quiet_on_progress() {
-    assert!(RunOptions::new("http://x", "m", ".").convergence.is_none());
+    assert!(fake_zen::base_opts(&std::env::temp_dir())
+        .convergence
+        .is_none());
 
-    let dir = tmpdir("progress");
-    let (url, _seen) = serve(vec![
-        failing_build("c1"),
-        failing_build("c2"),
-        tool_reply("c3", "Bash", json!({"command": "echo ok"})),
-        failing_build("c4"),
-        failing_build("c5"),
-        text_reply("Build fixed."),
-    ])
-    .await;
+    let dir = fake_zen::tmpdir("progress");
+    let mut lines = vec![init_line()];
+    lines.push(edit_assistant("e1"));
+    lines.push(tool_result("e1", "edit ok", false));
+    lines.push(bash_assistant("b1"));
+    lines.push(tool_result("b1", "test result: ok", false));
+    lines.push(result_line("Build fixed."));
+    let binary = fake_zen::stream_script(&dir, &lines.join("\n"));
     let sink = Arc::new(RecordingSink::new());
-    let mut opts = RunOptions::new(url, "fake/model:free", &dir);
-    opts.dangerous_allow_all = true;
+    let mut opts = fake_zen::base_opts(&dir);
     opts.convergence = Some(ConvergencePolicy::default());
-    let res = run_task_with_sink(&opts, "make the build pass", sink.clone())
-        .await
-        .unwrap();
-    assert!(!res.is_error, "{}", res.result);
-    assert_eq!(res.result, "Build fixed.");
+    let handle = CliRunHandle::new();
+    let outcome = run_cli_task_with_binary(
+        &opts,
+        "make the build pass",
+        sink.clone(),
+        &handle,
+        Some(binary),
+    )
+    .await
+    .unwrap();
+    assert!(outcome.success, "{}", outcome.result);
+    assert_eq!(outcome.result, "Build fixed.");
     let log = sink.to_ndjson().unwrap();
     assert_eq!(count(&log, "loop_detected"), 0, "{log}");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-#[cfg(unix)]
 #[tokio::test]
-async fn repeating_the_same_probe_is_still_stagnant() {
-    let dir = tmpdir("probe");
-    let fp = dir.join("notes.txt");
-    std::fs::write(&fp, "same content\n").unwrap();
-    let fp = fp.to_string_lossy().to_string();
-    let mut replies: Vec<Value> = (1..=7)
-        .map(|i| tool_reply(&format!("r{i}"), "Read", json!({"file_path": fp})))
-        .collect();
-    replies.push(text_reply("Re-planned."));
-    let (url, seen) = serve(replies).await;
+async fn repeating_the_same_probe_is_stagnant() {
+    let dir = fake_zen::tmpdir("probe");
+    // 6 identical Read rounds: the first output is new, the next 5 are
+    // stagnant, so the guard fires on the final round.
+    let mut lines = vec![init_line()];
+    for i in 1..=6 {
+        lines.push(format!(
+            r#"{{"v":1,"type":"assistant","message":{{"role":"assistant","tool_calls":[{{"id":"r{i}","type":"function","function":{{"name":"Read","arguments":"{{\"file_path\": \"notes.txt\"}}"}}}}]}}}}"#
+        ));
+        lines.push(tool_result(&format!("r{i}"), "same content", false));
+    }
+    lines.push(result_line("Looked around."));
+    let binary = fake_zen::stream_script(&dir, &lines.join("\n"));
     let sink = Arc::new(RecordingSink::new());
-    let mut opts = RunOptions::new(url, "fake/model:free", &dir);
-    opts.dangerous_allow_all = true;
-    opts.max_turns = 20;
+    let mut opts = fake_zen::base_opts(&dir);
     opts.convergence = Some(ConvergencePolicy::default());
-    let res = run_task_with_sink(&opts, "look around", sink.clone())
-        .await
-        .unwrap();
-    assert!(!res.is_error, "{}", res.result);
+    let handle = CliRunHandle::new();
+    let outcome =
+        run_cli_task_with_binary(&opts, "look around", sink.clone(), &handle, Some(binary))
+            .await
+            .unwrap();
+    assert!(!outcome.success, "guard must end the task as failed");
     let log = sink.to_ndjson().unwrap();
     assert_eq!(count(&log, "loop_detected"), 1, "{log}");
-    assert!(log.contains("stagnant_rounds"), "{log}");
-    let reqs = seen.lock().unwrap();
-    let last = serde_json::to_string(&reqs[reqs.len() - 1]["messages"]).unwrap();
+    assert!(log.contains("stagnant"), "{log}");
     assert!(
-        last.contains("CONVERGENCE GUARD"),
-        "re-plan prompt reached the model"
+        outcome.result.contains("convergence guard"),
+        "{}",
+        outcome.result
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

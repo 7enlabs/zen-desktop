@@ -2,12 +2,9 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use zen_core::{
-    AgentEvent, ChatRequest, ChatResponse, EventSink, LlmBackend, PermissionChecker,
-    PermissionDecision, ToolContext,
-};
+
+use crate::events::{DesktopEvent, DesktopEventSink};
 
 pub const BUDGET_EXCEEDED_EVENT: &str = "budget_exceeded";
 
@@ -152,6 +149,15 @@ impl BudgetTracker {
         self.tool_calls = self.tool_calls.saturating_add(1);
     }
 
+    /// Overwrite the totals with the authoritative usage from a `result`
+    /// line (cumulative for the turn). The live estimate added by
+    /// [`BudgetEnforcer::observe`] is provisional; this replaces it with
+    /// the CLI's own count.
+    pub fn set_usage(&mut self, input_tokens: u64, output_tokens: u64) {
+        self.input_tokens = input_tokens;
+        self.output_tokens = output_tokens;
+    }
+
     pub fn check(&self) -> Result<(), BudgetExceeded> {
         let b = &self.budget;
         if self.input_tokens > b.max_input_tokens {
@@ -189,7 +195,7 @@ impl BudgetTracker {
 
 pub struct BudgetEnforcer {
     tracker: Mutex<BudgetTracker>,
-    sink: Arc<dyn EventSink>,
+    sink: Arc<dyn DesktopEventSink>,
     notified: Mutex<bool>,
 }
 
@@ -207,7 +213,7 @@ impl fmt::Debug for BudgetEnforcer {
 }
 
 impl BudgetEnforcer {
-    pub fn new(budget: TaskBudget, sink: Arc<dyn EventSink>) -> Arc<Self> {
+    pub fn new(budget: TaskBudget, sink: Arc<dyn DesktopEventSink>) -> Arc<Self> {
         Arc::new(Self {
             tracker: Mutex::new(BudgetTracker::new(budget)),
             sink,
@@ -223,7 +229,7 @@ impl BudgetEnforcer {
                 let mut notified = self.notified.lock().unwrap();
                 if !*notified {
                     *notified = true;
-                    self.sink.emit(AgentEvent::SystemMessage {
+                    self.sink.emit_desktop(DesktopEvent::SystemMessage {
                         event: BUDGET_EXCEEDED_EVENT.to_string(),
                         text: e.to_string(),
                     });
@@ -245,6 +251,15 @@ impl BudgetEnforcer {
         self.check()
     }
 
+    /// Replace the running totals with the authoritative usage from a
+    /// `result` line (cumulative for the turn).
+    pub fn record_turn_usage(&self, input_tokens: u64, output_tokens: u64) {
+        self.tracker
+            .lock()
+            .unwrap()
+            .set_usage(input_tokens, output_tokens);
+    }
+
     pub fn snapshot(&self) -> (u64, u64, u32, u64) {
         let t = self.tracker.lock().unwrap();
         (
@@ -254,68 +269,64 @@ impl BudgetEnforcer {
             t.elapsed_secs(),
         )
     }
-}
 
-pub struct BudgetedBackend {
-    inner: Arc<dyn LlmBackend>,
-    enforcer: Arc<BudgetEnforcer>,
-}
-
-impl BudgetedBackend {
-    pub fn new(inner: Arc<dyn LlmBackend>, enforcer: Arc<BudgetEnforcer>) -> Self {
-        Self { inner, enforcer }
-    }
-}
-
-#[async_trait]
-impl LlmBackend for BudgetedBackend {
-    async fn chat(&self, req: ChatRequest) -> anyhow::Result<ChatResponse> {
-        self.enforcer
-            .check()
-            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-        let resp = self.inner.chat(req).await?;
-        self.enforcer
-            .record_llm_usage(resp.usage.prompt_tokens, resp.usage.completion_tokens);
-        self.enforcer
-            .check()
-            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-        Ok(resp)
-    }
-}
-
-pub struct BudgetedPermissions {
-    inner: Arc<dyn PermissionChecker>,
-    enforcer: Arc<BudgetEnforcer>,
-}
-
-impl BudgetedPermissions {
-    pub fn new(inner: Arc<dyn PermissionChecker>, enforcer: Arc<BudgetEnforcer>) -> Self {
-        Self { inner, enforcer }
-    }
-}
-
-impl PermissionChecker for BudgetedPermissions {
-    fn check(
-        &self,
-        tool_name: &str,
-        input: &serde_json::Value,
-        read_only: bool,
-        ctx: &ToolContext,
-    ) -> PermissionDecision {
-        match self.enforcer.record_tool_call() {
-            Ok(()) => self.inner.check(tool_name, input, read_only, ctx),
-            Err(e) => PermissionDecision::Deny(e.to_string()),
+    /// Observe one event from the CLI subprocess stream and enforce the
+    /// budget against it. Returns `Err` when a limit is hit; the caller
+    /// stops the child process.
+    ///
+    /// Token accounting from the stream: the `result` line carries the
+    /// authoritative cumulative usage, but it only arrives at the end, so
+    /// during the run output tokens are estimated from the streamed text
+    /// (~1 token per 4 chars, a rough upper bound for plain text) and
+    /// replaced by the real count when the `result` line lands. Input
+    /// tokens cannot be observed mid-run; they are checked before spawn
+    /// (prompt estimate) and again here from the `result` line.
+    pub fn observe(&self, ev: &DesktopEvent) -> Result<(), BudgetExceeded> {
+        match ev {
+            DesktopEvent::AssistantMessage {
+                text, tool_calls, ..
+            } => {
+                let mut est: u64 = 0;
+                if let Some(t) = text {
+                    est += estimate_tokens(t);
+                }
+                for tc in tool_calls {
+                    est += estimate_tokens(&tc.arguments);
+                    self.record_tool_call()?;
+                }
+                if est > 0 {
+                    self.record_llm_usage(0, est);
+                }
+                self.check()
+            }
+            DesktopEvent::SessionEnd {
+                input_tokens,
+                output_tokens,
+                ..
+            } => {
+                self.record_turn_usage(*input_tokens, *output_tokens);
+                self.check()
+            }
+            _ => self.check(),
         }
     }
+}
+
+/// Rough token estimate for streamed text: ~1 token per 4 characters.
+/// Used only as a live upper-bound guard while the run is in flight; the
+/// authoritative count from the `result` line replaces it at the end.
+pub(crate) fn estimate_tokens(s: &str) -> u64 {
+    (s.chars().count() as u64) / 4
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::events::DesktopEvent;
     use std::time::Duration;
 
     struct VecSink {
-        events: Mutex<Vec<AgentEvent>>,
+        events: Mutex<Vec<DesktopEvent>>,
     }
 
     impl VecSink {
@@ -331,7 +342,7 @@ mod tests {
                 .unwrap()
                 .iter()
                 .filter_map(|e| match e {
-                    AgentEvent::SystemMessage { event, text } => {
+                    DesktopEvent::SystemMessage { event, text } => {
                         Some((event.clone(), text.clone()))
                     }
                     _ => None,
@@ -340,8 +351,8 @@ mod tests {
         }
     }
 
-    impl EventSink for VecSink {
-        fn emit(&self, ev: AgentEvent) {
+    impl DesktopEventSink for VecSink {
+        fn emit_desktop(&self, ev: DesktopEvent) {
             self.events.lock().unwrap().push(ev);
         }
     }
@@ -476,38 +487,58 @@ mod tests {
     }
 
     #[test]
-    fn budgeted_permissions_denies_past_limit() {
-        struct AllowAll;
-        impl PermissionChecker for AllowAll {
-            fn check(
-                &self,
-                _: &str,
-                _: &serde_json::Value,
-                _: bool,
-                _: &ToolContext,
-            ) -> PermissionDecision {
-                PermissionDecision::Allow
-            }
-        }
-
+    fn observe_denies_tool_calls_past_limit() {
         let sink = VecSink::new();
         let enforcer = BudgetEnforcer::new(small_budget(), sink.clone());
-        let perms = BudgetedPermissions::new(Arc::new(AllowAll), enforcer);
-        let ctx = ToolContext::new(std::env::temp_dir(), "test");
-        let args = serde_json::json!({});
-        for _ in 0..3 {
-            assert!(matches!(
-                perms.check("Read", &args, true, &ctx),
-                PermissionDecision::Allow
-            ));
+        let call = |id: &str| DesktopEvent::AssistantMessage {
+            text: None,
+            tool_calls: vec![crate::events::ToolCallInfo {
+                id: id.to_string(),
+                name: "Read".to_string(),
+                arguments: "{}".to_string(),
+            }],
+            parent_tool_use_id: None,
+        };
+        for i in 0..3 {
+            assert!(enforcer.observe(&call(&format!("c{i}"))).is_ok());
         }
-        match perms.check("Read", &args, true, &ctx) {
-            PermissionDecision::Deny(msg) => {
-                assert!(msg.contains("tool call budget 3 exceeded"), "{msg}")
-            }
-            d => panic!("expected Deny, got {d:?}"),
-        }
-
+        let err = enforcer.observe(&call("c3")).unwrap_err();
+        assert!(
+            err.to_string().contains("tool call budget 3 exceeded"),
+            "{err}"
+        );
         assert_eq!(sink.system_messages().len(), 1);
+    }
+
+    #[test]
+    fn observe_replaces_estimate_with_result_usage() {
+        let sink = VecSink::new();
+        let enforcer = BudgetEnforcer::new(small_budget(), sink.clone());
+        // 400 chars of streamed text estimate to 100 output tokens.
+        let long_text = "x".repeat(400);
+        let ev = DesktopEvent::AssistantMessage {
+            text: Some(long_text),
+            tool_calls: vec![],
+            parent_tool_use_id: None,
+        };
+        assert!(enforcer.observe(&ev).is_err(), "estimate must trip the cap");
+        // The authoritative result line replaces the estimate with the real
+        // count, so a run that actually used fewer tokens is not misjudged
+        // after the fact.
+        let end = DesktopEvent::SessionEnd {
+            success: true,
+            result: "done".to_string(),
+            num_turns: 1,
+            total_cost_usd: 0.0,
+            input_tokens: 10,
+            output_tokens: 5,
+            model: "m:free".to_string(),
+            duration_ms: 1,
+            claims_verified: 0,
+            claims_unverified: 0,
+            claims_contradicted: 0,
+        };
+        assert!(enforcer.observe(&end).is_ok());
+        assert_eq!(enforcer.snapshot().1, 5);
     }
 }

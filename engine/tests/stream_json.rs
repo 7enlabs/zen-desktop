@@ -402,3 +402,115 @@ fn parses_user_two_tool_results_in_order() {
         other => panic!("unexpected event: {other:?}"),
     }
 }
+
+// Fixtures 23-26 are copies of the CLI repo's sample fixtures
+// (7enlabs/zencode main 03eb057, docs/fixtures/stream-json/*.ndjson),
+// kept verbatim so the Desktop parser is checked against the CLI's own
+// examples. The CLI sample files use "<uuid>" / "<cwd>" placeholders.
+
+#[test]
+fn compact_boundary_maps_to_compact_boundary() {
+    let events = project("23_compact_boundary.ndjson");
+    let found = events.iter().find_map(|e| match e {
+        DesktopEvent::CompactBoundary {
+            trigger,
+            pre_tokens,
+        } => Some((trigger.clone(), *pre_tokens)),
+        _ => None,
+    });
+    assert_eq!(
+        found,
+        Some(("auto".to_string(), 10)),
+        "compact_boundary must project to CompactBoundary, got: {events:?}"
+    );
+}
+
+#[test]
+fn hook_message_stays_system_message_with_text() {
+    let events = project("24_hook_message.ndjson");
+    let found = events.iter().find_map(|e| match e {
+        DesktopEvent::SystemMessage { event, text } if event == "cli_system:hook_message" => {
+            Some(text.clone())
+        }
+        _ => None,
+    });
+    let text = found.expect("hook_message must project to a SystemMessage");
+    assert!(text.contains("hook says hi"), "{text}");
+    assert!(text.contains("PreToolUse"), "{text}");
+}
+
+#[test]
+fn permission_denied_maps_to_permission_denied() {
+    let events = project("25_permission_denied.ndjson");
+    let found = events.iter().find_map(|e| match e {
+        DesktopEvent::PermissionDenied {
+            tool_name,
+            tool_use_id,
+        } => Some((tool_name.clone(), tool_use_id.clone())),
+        _ => None,
+    });
+    assert_eq!(
+        found,
+        Some(("Write".to_string(), "call_write_1".to_string())),
+        "permission_denied must project to PermissionDenied, got: {events:?}"
+    );
+}
+
+#[test]
+fn api_retry_maps_to_api_retry() {
+    let events = project("26_api_retry.ndjson");
+    let found = events.iter().find_map(|e| match e {
+        DesktopEvent::ApiRetry {
+            attempt,
+            max_retries,
+            retry_delay_ms,
+            error_status,
+            error,
+        } => Some((
+            *attempt,
+            *max_retries,
+            *retry_delay_ms,
+            *error_status,
+            error.clone(),
+        )),
+        _ => None,
+    });
+    let (attempt, max_retries, retry_delay_ms, error_status, error) =
+        found.expect("api_retry must project to ApiRetry");
+    assert_eq!(attempt, 1);
+    assert_eq!(max_retries, 5);
+    assert_eq!(retry_delay_ms, 1160);
+    assert_eq!(error_status, Some(500));
+    assert!(error.contains("upstream overloaded"), "{error}");
+}
+
+#[test]
+fn stream_event_delta_is_provisional_text_delta() {
+    let lines = parse_stream_json(
+        r#"{"v":1,"type":"stream_event","session_id":"s1","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"hel"}}}"#,
+    )
+    .unwrap();
+    assert_eq!(lines.len(), 1);
+    let events = to_desktop_events(&lines[0]);
+    assert_eq!(events.len(), 1);
+    match &events[0] {
+        DesktopEvent::TextDelta { text } => assert_eq!(text, "hel"),
+        other => panic!("stream_event delta must project to TextDelta, got: {other:?}"),
+    }
+}
+
+#[test]
+fn stream_event_without_delta_is_surfaced_not_dropped() {
+    let lines = parse_stream_json(
+        r#"{"v":1,"type":"stream_event","session_id":"s1","event":{"type":"other","x":1}}"#,
+    )
+    .unwrap();
+    let events = to_desktop_events(&lines[0]);
+    assert_eq!(events.len(), 1);
+    match &events[0] {
+        DesktopEvent::Unknown { variant } => {
+            assert!(variant.contains("stream_event"), "{variant}")
+        }
+        other => panic!("stream_event without delta must surface as Unknown, got: {other:?}"),
+    }
+}

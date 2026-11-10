@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use zen_core::{AgentEvent, EventSink};
+
+use crate::events::DesktopEvent;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -297,17 +298,20 @@ fn failed_count(lower: &str) -> Option<u64> {
     max
 }
 
-pub struct ClaimingSink {
-    inner: Arc<dyn EventSink>,
+/// Observes the CLI subprocess stream and maintains the claim registry:
+/// claims are detected in assistant text, and tool results attach as
+/// evidence for them. The observer does not forward events; the run loop
+/// owns the sink and calls [`ClaimObserver::observe`] for each event before
+/// emitting it, so the final `SessionEnd` can carry the registry counts.
+pub struct ClaimObserver {
     registry: Arc<ClaimRegistry>,
 
     calls: Mutex<HashMap<String, (String, String)>>,
 }
 
-impl ClaimingSink {
-    pub fn new(inner: Arc<dyn EventSink>, registry: Arc<ClaimRegistry>) -> Self {
+impl ClaimObserver {
+    pub fn new(registry: Arc<ClaimRegistry>) -> Self {
         Self {
-            inner,
             registry,
             calls: Mutex::new(HashMap::new()),
         }
@@ -316,25 +320,25 @@ impl ClaimingSink {
     pub fn registry(&self) -> &Arc<ClaimRegistry> {
         &self.registry
     }
-}
 
-impl EventSink for ClaimingSink {
-    fn emit(&self, ev: AgentEvent) {
-        match &ev {
-            AgentEvent::Assistant { message, .. } => {
-                for tc in message.tool_calls.iter().flatten() {
-                    self.calls.lock().unwrap().insert(
-                        tc.id.clone(),
-                        (tc.function.name.clone(), tc.function.arguments.clone()),
-                    );
+    pub fn observe(&self, ev: &DesktopEvent) {
+        match ev {
+            DesktopEvent::AssistantMessage {
+                text, tool_calls, ..
+            } => {
+                for tc in tool_calls {
+                    self.calls
+                        .lock()
+                        .unwrap()
+                        .insert(tc.id.clone(), (tc.name.clone(), tc.arguments.clone()));
                 }
-                if let Some(text) = message.content.as_deref().filter(|t| !t.is_empty()) {
+                if let Some(text) = text.as_deref().filter(|t| !t.is_empty()) {
                     for (kind, statement) in detect_claims(text) {
                         self.registry.register_claim(kind, statement);
                     }
                 }
             }
-            AgentEvent::ToolResult {
+            DesktopEvent::ToolResult {
                 tool_use_id,
                 content,
                 is_error,
@@ -379,16 +383,30 @@ impl EventSink for ClaimingSink {
             }
             _ => {}
         }
-        self.inner.emit(ev);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::events::RecordingSink;
-    use zen_core::ChatMessage;
+    use crate::events::ToolCallInfo;
 
+    fn assistant(text: &str, calls: Vec<ToolCallInfo>) -> DesktopEvent {
+        DesktopEvent::AssistantMessage {
+            text: Some(text.to_string()),
+            tool_calls: calls,
+            parent_tool_use_id: None,
+        }
+    }
+
+    fn tool_result(id: &str, content: &str, is_error: bool) -> DesktopEvent {
+        DesktopEvent::ToolResult {
+            tool_use_id: id.to_string(),
+            content: content.to_string(),
+            is_error,
+            parent_tool_use_id: None,
+        }
+    }
     #[test]
     fn lifecycle_register_unverified_then_verified() {
         let r = ClaimRegistry::new();
@@ -460,53 +478,35 @@ mod tests {
     }
 
     #[test]
-    fn claiming_sink_registers_claims_from_assistant_text() {
+    fn claiming_observer_registers_claims_from_assistant_text() {
         let registry = Arc::new(ClaimRegistry::new());
-        let inner = Arc::new(RecordingSink::new());
-        let sink = ClaimingSink::new(inner.clone(), registry.clone());
-        sink.emit(AgentEvent::Assistant {
-            message: ChatMessage::assistant(Some("All tests pass now.".into()), None),
-            parent_tool_use_id: None,
-        });
+        let observer = ClaimObserver::new(registry.clone());
+        observer.observe(&assistant("All tests pass now.", vec![]));
         let claims = registry.claims();
         assert_eq!(claims.len(), 1);
         assert_eq!(claims[0].kind, ClaimKind::TestRun);
         assert_eq!(claims[0].status, ClaimStatus::Unverified);
-
-        assert_eq!(inner.events().len(), 1);
     }
 
     #[test]
-    fn claiming_sink_attaches_tool_evidence_to_matching_claim() {
-        use zen_core::{FunctionCall, ToolCall};
+    fn claiming_observer_attaches_tool_evidence_to_matching_claim() {
         let registry = Arc::new(ClaimRegistry::new());
-        let inner = Arc::new(RecordingSink::new());
-        let sink = ClaimingSink::new(inner, registry.clone());
+        let observer = ClaimObserver::new(registry.clone());
 
-        sink.emit(AgentEvent::Assistant {
-            message: ChatMessage {
-                role: "assistant".into(),
-                content: Some("All tests pass.".into()),
-                tool_calls: Some(vec![ToolCall {
-                    id: "t1".into(),
-                    call_type: "function".into(),
-                    function: FunctionCall {
-                        name: "Bash".into(),
-                        arguments: r#"{"command": "cargo test"}"#.into(),
-                    },
-                }]),
-                ..Default::default()
-            },
-            parent_tool_use_id: None,
-        });
+        observer.observe(&assistant(
+            "All tests pass.",
+            vec![ToolCallInfo {
+                id: "t1".to_string(),
+                name: "Bash".to_string(),
+                arguments: r#"{"command": "cargo test"}"#.to_string(),
+            }],
+        ));
 
-        sink.emit(AgentEvent::ToolResult {
-            tool_use_id: "t1".into(),
-            content: "test result: ok. 12 passed; 0 failed".into(),
-            is_error: false,
-            parent_tool_use_id: None,
-            parallel: false,
-        });
+        observer.observe(&tool_result(
+            "t1",
+            "test result: ok. 12 passed; 0 failed",
+            false,
+        ));
         let claims = registry.claims();
         assert_eq!(claims.len(), 1);
         assert_eq!(claims[0].status, ClaimStatus::Verified);
@@ -514,34 +514,18 @@ mod tests {
     }
 
     #[test]
-    fn claiming_sink_contradicts_on_failing_tool_result() {
-        use zen_core::{FunctionCall, ToolCall};
+    fn claiming_observer_contradicts_on_failing_tool_result() {
         let registry = Arc::new(ClaimRegistry::new());
-        let inner = Arc::new(RecordingSink::new());
-        let sink = ClaimingSink::new(inner, registry.clone());
-        sink.emit(AgentEvent::Assistant {
-            message: ChatMessage {
-                role: "assistant".into(),
-                content: Some("The build succeeds.".into()),
-                tool_calls: Some(vec![ToolCall {
-                    id: "t2".into(),
-                    call_type: "function".into(),
-                    function: FunctionCall {
-                        name: "Bash".into(),
-                        arguments: r#"{"command": "cargo build"}"#.into(),
-                    },
-                }]),
-                ..Default::default()
-            },
-            parent_tool_use_id: None,
-        });
-        sink.emit(AgentEvent::ToolResult {
-            tool_use_id: "t2".into(),
-            content: "error: could not compile".into(),
-            is_error: true,
-            parent_tool_use_id: None,
-            parallel: false,
-        });
+        let observer = ClaimObserver::new(registry.clone());
+        observer.observe(&assistant(
+            "The build succeeds.",
+            vec![ToolCallInfo {
+                id: "t2".to_string(),
+                name: "Bash".to_string(),
+                arguments: r#"{"command": "cargo build"}"#.to_string(),
+            }],
+        ));
+        observer.observe(&tool_result("t2", "error: could not compile", true));
         let claims = registry.claims();
         assert_eq!(claims[0].status, ClaimStatus::Contradicted);
     }
