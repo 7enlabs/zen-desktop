@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
+use zencode_engine::cli_spawn::{run_cli_task, CliRunHandle};
 use zencode_engine::events::RecordingSink;
-use zencode_engine::{run_task_with_sink, RunOptions};
+use zencode_engine::RunOptions;
 
 const BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
 const MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
@@ -23,8 +24,10 @@ async fn main() -> anyhow::Result<()> {
     let task = "Create a file named hello.txt in the working directory containing exactly this text on one line: hello zencode";
     println!("task: {task}");
 
-    let result = run_task_with_sink(&opts, task, sink.clone()).await?;
-    println!("run result: {result:?}");
+    let handle = CliRunHandle::new();
+    let outcome = run_cli_task(&opts, task, sink.clone(), &handle).await?;
+    println!("run outcome: {outcome:?}");
+    assert!(outcome.success, "smoke run must succeed");
 
     let content = std::fs::read_to_string(dir.join("hello.txt"))?;
     println!("hello.txt: {content:?}");

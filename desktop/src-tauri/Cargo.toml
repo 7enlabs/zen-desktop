@@ -32,7 +32,6 @@ tauri-plugin-positioner = "2"
 rust-ini = "0.20"
 
 zencode_engine = { path = "../../engine" }
-zen-core = { git = "https://github.com/7enlab/zencode.git", rev = "290154c" }
 
 [features]
 

@@ -4,9 +4,9 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use zen_core::{AgentEvent, ChatRequest, EventSink, LlmBackend};
+
+use crate::events::{DesktopEvent, DesktopEventSink};
 
 pub const TELEMETRY_READY_EVENT: &str = "telemetry_guard_ready";
 
@@ -292,53 +292,8 @@ impl ZeroTelemetryProof {
     }
 }
 
-pub struct TelemetryBackend {
-    inner: Arc<dyn LlmBackend>,
-    guard: TelemetryGuard,
-    log: Arc<NetworkLog>,
-}
-
-impl TelemetryBackend {
-    pub fn new(inner: Arc<dyn LlmBackend>, guard: TelemetryGuard, log: Arc<NetworkLog>) -> Self {
-        Self { inner, guard, log }
-    }
-
-    pub fn log(&self) -> &Arc<NetworkLog> {
-        &self.log
-    }
-}
-
-#[async_trait]
-impl LlmBackend for TelemetryBackend {
-    async fn chat(&self, req: ChatRequest) -> anyhow::Result<zen_core::ChatResponse> {
-        let bytes_up = serde_json::to_string(&req)
-            .map(|s| s.len() as u64)
-            .unwrap_or(0);
-        let resp = self.inner.chat(req).await?;
-        let bytes_down = resp
-            .message
-            .content
-            .as_deref()
-            .map(|c| c.len() as u64)
-            .unwrap_or(0)
-            + resp
-                .finish_reason
-                .as_deref()
-                .map(|r| r.len() as u64)
-                .unwrap_or(0);
-        self.log.record(
-            self.guard.allowed_host(),
-            "/chat/completions",
-            NetworkPurpose::ModelChat,
-            bytes_up,
-            bytes_down,
-        );
-        Ok(resp)
-    }
-}
-
-pub fn emit_telemetry_ready(sink: &Arc<dyn EventSink>, guard: &TelemetryGuard) {
-    sink.emit(AgentEvent::SystemMessage {
+pub fn emit_telemetry_ready(sink: &Arc<dyn DesktopEventSink>, guard: &TelemetryGuard) {
+    sink.emit_desktop(DesktopEvent::SystemMessage {
         event: TELEMETRY_READY_EVENT.to_string(),
         text: format!(
             "zero-telemetry guard armed: the only host this run may contact is '{}'. No analytics, no crash reports, no phone-home.",
@@ -350,37 +305,6 @@ pub fn emit_telemetry_ready(sink: &Arc<dyn EventSink>, guard: &TelemetryGuard) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use zen_core::{ChatMessage, ChatResponse, Usage};
-
-    struct FakeBackend {
-        reply: String,
-    }
-
-    #[async_trait]
-    impl LlmBackend for FakeBackend {
-        async fn chat(&self, _req: ChatRequest) -> anyhow::Result<ChatResponse> {
-            Ok(ChatResponse {
-                message: ChatMessage::assistant(Some(self.reply.clone()), None),
-                usage: Usage {
-                    prompt_tokens: 10,
-                    completion_tokens: 5,
-                    total_tokens: 15,
-                    cache_creation_input_tokens: 0,
-                    cache_read_input_tokens: 0,
-                },
-                finish_reason: Some("stop".to_string()),
-            })
-        }
-    }
-
-    fn chat_request() -> ChatRequest {
-        ChatRequest {
-            model: "x:free".to_string(),
-            messages: vec![ChatMessage::user("hi")],
-            tools: vec![],
-            max_tokens: None,
-        }
-    }
 
     #[test]
     fn guard_accepts_configured_host() {
@@ -494,29 +418,6 @@ mod tests {
         let report = ZeroTelemetryProof::generate(&NetworkLog::new());
         assert!(report.is_clean());
         assert_eq!(report.entry_count, 0);
-    }
-
-    #[tokio::test]
-    async fn backend_wrapper_logs_each_chat() {
-        let guard = TelemetryGuard::from_base_url("https://ai-gateway.kilo.ai/api/v1").unwrap();
-        let log = Arc::new(NetworkLog::new());
-        let backend = TelemetryBackend::new(
-            Arc::new(FakeBackend { reply: "ok".into() }),
-            guard,
-            log.clone(),
-        );
-        let resp = backend.chat(chat_request()).await.unwrap();
-        assert_eq!(resp.message.content.as_deref(), Some("ok"));
-        assert_eq!(log.len(), 1);
-        let e = &log.entries()[0];
-        assert_eq!(e.host, "ai-gateway.kilo.ai");
-        assert_eq!(e.path, "/chat/completions");
-        assert_eq!(e.purpose, NetworkPurpose::ModelChat);
-        assert!(e.bytes_up > 0);
-        assert!(e.bytes_down > 0);
-        assert!(e.ts_ms > 0);
-
-        assert!(ZeroTelemetryProof::generate(&log).is_clean());
     }
 
     #[test]

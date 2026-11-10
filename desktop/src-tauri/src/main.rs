@@ -13,7 +13,8 @@ use tauri::Manager;
 use tauri::menu::{MenuBuilder, MenuItem, SubmenuBuilder};
 use zencode_engine::{
     checkpoints::CheckpointManager,
-    events::parse_ndjson,
+    cli_spawn::{run_cli_task, CliRunHandle},
+    events::{parse_ndjson, DesktopEventSink},
     ipc_bridge::{BridgeSink, IpcEnvelope},
     scope::ScopeDecl,
     session_store::{SessionMeta, SessionStore},
@@ -23,6 +24,7 @@ use zencode_engine::{
 
 struct AppState {
     sinks: Mutex<HashMap<String, Arc<BridgeSink>>>,
+    running: Mutex<HashMap<String, Arc<CliRunHandle>>>,
 }
 
 fn ensure_free_model(model: &str) -> Result<(), String> {
@@ -41,10 +43,10 @@ struct ForwardingSink {
     channel: Channel<IpcEnvelope>,
 }
 
-impl zen_core::EventSink for ForwardingSink {
-    fn emit(&self, ev: zen_core::AgentEvent) {
+impl DesktopEventSink for ForwardingSink {
+    fn emit_desktop(&self, ev: zencode_engine::events::DesktopEvent) {
         let before = self.bridge.envelopes().len();
-        self.bridge.emit(ev);
+        self.bridge.emit_desktop(ev);
         let envs = self.bridge.envelopes();
 
         if envs.len() > before {
@@ -82,7 +84,7 @@ async fn run_task(
         .map_err(|e| format!("state lock poisoned: {e}"))?
         .insert(session_id.clone(), bridge.clone());
 
-    let sink: Arc<dyn zen_core::EventSink> = Arc::new(ForwardingSink {
+    let sink: Arc<dyn DesktopEventSink> = Arc::new(ForwardingSink {
         bridge: bridge.clone(),
         channel: on_event,
     });
@@ -94,12 +96,21 @@ async fn run_task(
         description: "user-selected working directory".to_owned(),
     });
     let sid = session_id.clone();
+    let handle = CliRunHandle::new();
+    app.state::<AppState>()
+        .running
+        .lock()
+        .map_err(|e| format!("state lock poisoned: {e}"))?
+        .insert(session_id.clone(), handle.clone());
 
+    let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
-        let result = zencode_engine::run_task_with_sink(&opts, &prompt, sink).await;
-        if let Err(e) = &result {
-
+        let outcome = run_cli_task(&opts, &prompt, sink, &handle).await;
+        if let Err(e) = &outcome {
             eprintln!("run_task {sid} failed: {e:#}");
+        }
+        if let Ok(mut running) = app_handle.state::<AppState>().running.lock() {
+            running.remove(&sid);
         }
 
         if let Ok(store) = SessionStore::with_default_root() {
@@ -113,6 +124,23 @@ async fn run_task(
     });
 
     Ok(session_id)
+}
+
+/// Stop a running task: SIGINT first, then SIGTERM, then SIGKILL
+/// (see `cli_spawn::escalate_stop`). The run ends with exit 130.
+#[tauri::command]
+fn stop_task(app: tauri::AppHandle, session_id: String) -> Result<String, String> {
+    validate_session_id_arg(&session_id)?;
+    let handle = app
+        .state::<AppState>()
+        .running
+        .lock()
+        .map_err(|e| format!("state lock poisoned: {e}"))?
+        .get(&session_id)
+        .cloned()
+        .ok_or_else(|| "no running task for this session id".to_owned())?;
+    handle.request_stop("user stop");
+    Ok("stopping".to_string())
 }
 
 #[tauri::command]
@@ -254,7 +282,7 @@ fn signed_version_comparator(current: &str, release: tauri_plugin_updater::Remot
 }
 
 
-fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu> {
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     let file = SubmenuBuilder::new(app, "File")
         .item(&MenuItem::with_id(app, "new-session", "New Session", true, Some("CmdOrCtrl+N"))?)
         .item(&MenuItem::with_id(app, "focus-composer", "Focus Composer", true, Some("CmdOrCtrl+L"))?)
@@ -322,11 +350,13 @@ fn main() {
         .plugin(tauri_plugin_positioner::init())
         .manage(AppState {
             sinks: Mutex::new(HashMap::new()),
+            running: Mutex::new(HashMap::new()),
         })
 
         .manage(NotificationManager::new())
         .invoke_handler(tauri::generate_handler![
             run_task,
+            stop_task,
             list_sessions,
             get_log_since,
             get_timeline,

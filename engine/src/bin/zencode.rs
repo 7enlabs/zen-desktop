@@ -2,9 +2,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use zencode_engine::cli_spawn::{run_cli_task, CliRunHandle};
 use zencode_engine::events::RecordingSink;
 use zencode_engine::scope::ScopeDecl;
-use zencode_engine::{run_task_recorded, RunOptions};
+use zencode_engine::RunOptions;
 
 const DEFAULT_BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
 const DEFAULT_MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
@@ -87,7 +88,8 @@ async fn cmd_run(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<()
     let opts = base_opts(&model, cwd.clone(), max_turns);
 
     let sink = Arc::new(RecordingSink::new());
-    let result = run_task_recorded(&opts, &task, sink.clone()).await?;
+    let handle = CliRunHandle::new();
+    let outcome = run_cli_task(&opts, &task, sink.clone(), &handle).await?;
 
     let dir = session_dir.unwrap_or_else(|| cwd.join(".zencode").join("sessions"));
     std::fs::create_dir_all(&dir)?;
@@ -95,15 +97,15 @@ async fn cmd_run(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<()
     let path = dir.join(format!("session-{ts}.jsonl"));
     std::fs::write(&path, sink.to_ndjson()?)?;
 
-    println!("result: {}", result.result);
-    println!("turns: {}", result.num_turns);
+    println!("result: {}", outcome.result);
+    println!("turns: {}", outcome.num_turns);
     println!(
         "tokens: {} in / {} out",
-        result.usage.input_tokens, result.usage.output_tokens
+        outcome.input_tokens, outcome.output_tokens
     );
-    println!("cost_usd: {}", result.total_cost_usd);
+    println!("cost_usd: {}", outcome.total_cost_usd);
     println!("session: {}", path.display());
-    if result.is_error {
+    if !outcome.success {
         std::process::exit(1);
     }
     Ok(())
@@ -206,7 +208,7 @@ async fn cmd_eval(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<(
     let mut passed = 0;
     let mut total_in = 0u64;
     let mut total_out = 0u64;
-    let mut total_turns = 0usize;
+    let mut total_turns = 0u64;
 
     for t in EVAL_TASKS {
         let dir = std::env::temp_dir().join(format!(
@@ -225,12 +227,13 @@ async fn cmd_eval(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<(
 
         let opts = base_opts(&model, dir.clone(), max_turns);
         let sink = Arc::new(RecordingSink::new());
-        let res = run_task_recorded(&opts, t.prompt, sink).await;
+        let handle = CliRunHandle::new();
+        let res = run_cli_task(&opts, t.prompt, sink, &handle).await;
 
         let mut ok = false;
         let (turns, tok_in, tok_out) = match &res {
             Ok(r) => {
-                ok = !r.is_error
+                ok = r.success
                     && t.expect.iter().all(|(rel, want)| {
                         std::fs::read_to_string(dir.join(rel))
                             .map(|got| got.trim() == *want)
@@ -240,7 +243,7 @@ async fn cmd_eval(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<(
                 if ok && t.name == "bash-rename" {
                     ok = !dir.join("old.txt").exists();
                 }
-                (r.num_turns, r.usage.input_tokens, r.usage.output_tokens)
+                (r.num_turns, r.input_tokens, r.output_tokens)
             }
             Err(_) => (0, 0, 0),
         };
