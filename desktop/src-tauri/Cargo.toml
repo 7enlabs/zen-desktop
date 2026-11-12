@@ -1,5 +1,5 @@
 [package]
-name = "zencode-desktop"
+name = "zen-desktop"
 version = "0.1.0"
 description = "ZenCode Desktop - Tauri 2 shell (g6 scaffold, engine not yet wired)"
 authors = ["7enlab"]

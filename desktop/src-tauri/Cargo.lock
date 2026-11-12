@@ -6136,7 +6136,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zencode-desktop"
+name = "zen-desktop"
 version = "0.1.0"
 dependencies = [
  "rust-ini",

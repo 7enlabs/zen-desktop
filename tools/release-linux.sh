@@ -16,7 +16,7 @@ if [ "$APP_VERSION" != "$VERSION" ]; then
 fi
 
 PROJECT_URL="${CI_API_V4_URL:-https://gitlab.com/api/v4}/projects/${CI_PROJECT_ID:-87760189}"
-PKG_URL="$PROJECT_URL/packages/generic/zencode-desktop/$TAG"
+PKG_URL="$PROJECT_URL/packages/generic/zen-desktop/$TAG"
 
 (cd "$ROOT/desktop/src-tauri" && cargo tauri build --bundles appimage)
 
@@ -24,7 +24,7 @@ BUNDLE="$ROOT/desktop/src-tauri/target/release/bundle/appimage"
 SRC="$(find "$BUNDLE" -maxdepth 1 -name '*.AppImage' | head -n 1)"
 [ -n "$SRC" ] || { echo "ERROR: no AppImage in $BUNDLE" >&2; exit 1; }
 ARCH="$(basename "$SRC" .AppImage | sed 's/.*_//')"
-NAME="zencode-desktop_${VERSION}_${ARCH}.AppImage"
+NAME="zen-desktop_${VERSION}_${ARCH}.AppImage"
 
 mkdir -p "$DIST"
 cp "$SRC" "$DIST/$NAME"

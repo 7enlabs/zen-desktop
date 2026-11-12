@@ -93,6 +93,6 @@ then rebuild.
 
 ## Still stuck?
 
-- Search existing issues on `7enlab/zencode-desktop` - someone may have hit it.
+- Search existing issues on `7enlabs/zen-desktop` - someone may have hit it.
 - For CLI-side problems (agent loop, stream-json), file an issue on `atzenn/zencode` with the `desktop` label.
 - When reporting, include: OS, `rustc --version`, the exact command, and the last ~30 lines of output.

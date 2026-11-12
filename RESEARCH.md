@@ -16,7 +16,7 @@
 ## 2026-10-16 - GitHub + Real CI
 - **Research**: Windows checkout defaults `core.autocrlf=true` turning golden `.out` and cowfiles into CRLF → parity fail on Windows (21 cases). The GitHub App has contents/workflows/actions write on all repos but no administration (cannot create repo, cannot edit description/topics).
 - **Ideas**: `.gitattributes` force LF for golden/cowfiles; later add release job (tag → build binary 3 OS → GitHub Release), commit `Cargo.lock`, clippy/fmt job.
-- **Result**: private repo `7enlab/zencode-desktop`, 2 commits on `main`. CI run 38897073575: ubuntu ✅ macOS ✅ windows ✅ (first Windows fail due to CRLF, fixed). Artifacts binary for 3 OS. Added LICENSE, CHANGELOG, .editorconfig, Cargo metadata, CI runs only on push main/PR/dispatch, read-only permissions, concurrency.
+- **Result**: private repo `7enlabs/zen-desktop`, 2 commits on `main`. CI run 38897073575: ubuntu ✅ macOS ✅ windows ✅ (first Windows fail due to CRLF, fixed). Artifacts binary for 3 OS. Added LICENSE, CHANGELOG, .editorconfig, Cargo metadata, CI runs only on push main/PR/dispatch, read-only permissions, concurrency.
 
 ## 2026-10-16 19:04 - Real Terminal Width + Release
 - **Research**: `TIOCGWINSZ` differs by OS (Linux 0x5413, macOS/BSD 0x40087468); Windows gets `srWindow.Right-Left+1` from `GetConsoleScreenBufferInfo`. Done via std `extern "C"/"system"`, no `libc`/`windows-sys` crate needed.

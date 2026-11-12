@@ -70,7 +70,7 @@ The Desktop consumes the CLI crates through a pinned-rev git dependency (current
 
 ### 0.3-5 part 1 - unsigned `cargo tauri build` on Linux (InstaBox) - PASSED
 - Built 2026-10-18 in `desktop/src-tauri` (log `~/tauri-build.log` on the box):
-  release binary in 2m40s (total 3m15s), `zencode-desktop` binary 33.3 MB.
+  release binary in 2m40s (total 3m15s), `zen-desktop` binary 33.3 MB.
 - Bundles: `ZenCode Desktop_0.1.0_amd64.deb` 9.36 MiB,
   `ZenCode Desktop-0.1.0-1.x86_64.rpm` 9.36 MiB,
   `ZenCode Desktop_0.1.0_amd64.AppImage` 109.29 MiB. No compile errors or

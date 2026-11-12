@@ -493,7 +493,7 @@ mod tests {
         .to_string()
     }
 
-    const URL_031: &str = "https://gitlab.com/7enlab/zencode-desktop/-/releases/v0.3.1/downloads/ZenCode%20Desktop_0.3.1_amd64.AppImage";
+    const URL_031: &str = "https://gitlab.com/7enlab/zen-desktop/-/releases/v0.3.1/downloads/ZenCode%20Desktop_0.3.1_amd64.AppImage";
 
     #[test]
     fn update_manifest_with_signed_version_is_accepted() {
@@ -615,7 +615,7 @@ mod tests {
         assert!(endpoints[0]
             .as_str()
             .unwrap()
-            .starts_with("https://gitlab.com/7enlab/zencode-desktop/"));
+            .starts_with("https://gitlab.com/7enlab/zen-desktop/"));
     }
 
     #[test]
