@@ -39,7 +39,7 @@ for f in "$DIST"/*; do
     *.minisig|*SHA256SUMS*) continue ;;
   esac
   minisign -S -s "$KEY" -m "$f" \
-    -t "zencode-desktop $VERSION - $(basename "$f")" \
+    -t "zen-desktop $VERSION - $(basename "$f")" \
     -x "$f.minisig"
 
   minisign -V -q -p "$RELEASE_PUB" -m "$f" -x "$f.minisig"
@@ -58,7 +58,7 @@ fi
     | sort -z | xargs -0 sha256sum -- > SHA256SUMS
 )
 minisign -S -s "$KEY" -m "$DIST/SHA256SUMS" \
-  -t "zencode-desktop $VERSION - SHA256SUMS" \
+  -t "zen-desktop $VERSION - SHA256SUMS" \
   -x "$DIST/SHA256SUMS.minisig"
 minisign -V -q -p "$RELEASE_PUB" -m "$DIST/SHA256SUMS" -x "$DIST/SHA256SUMS.minisig"
 

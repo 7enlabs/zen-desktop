@@ -72,13 +72,13 @@ protected branches/tags. Pushing a protected tag `vX.Y.Z` (equal to the
 and `release-publish` in `.gitlab-ci.yml`:
 
 1. `cargo tauri build --bundles appimage`.
-2. The AppImage is copied to `zencode-desktop_<version>_<arch>.AppImage` and
+2. The AppImage is copied to `zen-desktop_<version>_<arch>.AppImage` and
    signed with `cargo tauri signer sign`, so the signed trusted comment is
-   `timestamp:<unix>\tfile:zencode-desktop_<version>_<arch>.AppImage`.
+   `timestamp:<unix>\tfile:zen-desktop_<version>_<arch>.AppImage`.
 3. `latest.json` (platform `linux-x86_64`) is written, both files go to the
    generic package registry, and the GitLab release links `latest.json` as
    `/latest.json`, which backs the only updater endpoint:
-   `https://gitlab.com/7enlab/zencode-desktop/-/releases/permalink/latest/downloads/latest.json`.
+   `https://gitlab.com/7enlab/zen-desktop/-/releases/permalink/latest/downloads/latest.json`.
 
 **Signed-version check.** The updater plugin always verifies the artifact
 signature, but the manifest `version` is unsigned. The app therefore installs a
@@ -113,7 +113,7 @@ minisign -V -p docs/keys/zencode-release.pub -m ZenCode-0.4.0.AppImage
   - `pubkey`: base64 of the whole `docs/keys/zencode-release.pub` file
     (Tauri format; a bare `RW...` line is NOT accepted).
   - `endpoints`: release metadata URLs. **Must point at GitLab**
-    (`https://gitlab.com/7enlab/zencode-desktop/-/releases/...`) while the
+    (`https://gitlab.com/7enlab/zen-desktop/-/releases/...`) while the
     GitHub account is suspended; GitHub endpoints are kept as fallback only.
   - `active: true`, `dialog: true` - the user always sees and confirms updates.
 - `desktop/src-tauri/src/main.rs` registers `tauri_plugin_updater`. The plugin
