@@ -4,17 +4,17 @@
 
 ## Finding
 
-Project-scope MCP servers (`<cwd>/.zencode/mcp.json`) were spawned at session
+Project-scope MCP servers (`<cwd>/.zen/mcp.json`) were spawned at session
 start **before any user approval**. Opening a cloned repository executed remote
-code via a malicious `.zencode/mcp.json` - local command execution the moment
+code via a malicious `.zen/mcp.json` - local command execution the moment
 the project was opened.
 
 ## Exploit sketch
 
-1. Attacker publishes a repo containing `.zencode/mcp.json` with a server
+1. Attacker publishes a repo containing `.zen/mcp.json` with a server
    whose `command` points to a payload (e.g. a stdio server that exfiltrates
    `~/.ssh` before responding).
-2. Victim clones the repo and opens it in ZenCode Desktop.
+2. Victim clones the repo and opens it in Zen Desktop.
 3. Desktop spawns every configured MCP server at session start - no approval
    gate - and the payload runs with the user's privileges.
 
@@ -23,8 +23,8 @@ the project was opened.
 `engine/src/mcp.rs` was changed so project-scope servers are never spawned
 automatically:
 
-- New `McpScope` enum: `TrustedConfig` (CLI scopes, `~/.zencode/mcp.json`)
-  vs `Project` (`<cwd>/.zencode/mcp.json` - untrusted).
+- New `McpScope` enum: `TrustedConfig` (CLI scopes, `~/.zen/mcp.json`)
+  vs `Project` (`<cwd>/.zen/mcp.json` - untrusted).
 - `load_desktop_mcp_configs()` now returns `DesktopMcpConfigs =
   (spawnable, project_pending, provenance, skips)`. Project-scope servers go
   into `project_pending`, never into `spawnable`.

@@ -136,7 +136,7 @@ class FakeShell {
   }
 
   greet() {
-    this._emit('ZenCode terminal (demo shell - no real backend yet)\r\n');
+    this._emit('Zen terminal (demo shell - no real backend yet)\r\n');
     this._emit('Type `help` for demo commands. The agent cannot type here.\r\n$ ');
   }
 }

@@ -2,10 +2,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use zencode_engine::cli_spawn::{run_cli_task, CliRunHandle};
-use zencode_engine::events::RecordingSink;
-use zencode_engine::scope::ScopeDecl;
-use zencode_engine::RunOptions;
+use zen_engine::cli_spawn::{run_cli_task, CliRunHandle};
+use zen_engine::events::RecordingSink;
+use zen_engine::scope::ScopeDecl;
+use zen_engine::RunOptions;
 
 const DEFAULT_BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
 const DEFAULT_MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
@@ -13,9 +13,9 @@ const DEFAULT_MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 fn usage() -> ! {
     eprintln!("usage:");
     eprintln!(
-        "  zencode run \"<task>\" [--model M] [--cwd DIR] [--max-turns N] [--session-dir DIR]"
+        "  zen-desktop run \"<task>\" [--model M] [--cwd DIR] [--max-turns N] [--session-dir DIR]"
     );
-    eprintln!("  zencode eval [--model M] [--max-turns N]");
+    eprintln!("  zen-desktop eval [--model M] [--max-turns N]");
     std::process::exit(2);
 }
 
@@ -25,8 +25,8 @@ fn env_or(key: &str, default: &str) -> String {
 
 fn base_opts(model: &str, cwd: PathBuf, max_turns: usize) -> RunOptions {
     let cwd = std::fs::canonicalize(&cwd).unwrap_or(cwd);
-    let mut opts = RunOptions::new(env_or("ZENCODE_BASE_URL", DEFAULT_BASE_URL), model, cwd);
-    opts.api_key = std::env::var("ZENCODE_API_KEY").ok();
+    let mut opts = RunOptions::new(env_or("ZEN_BASE_URL", DEFAULT_BASE_URL), model, cwd);
+    opts.api_key = std::env::var("ZEN_API_KEY").ok();
     opts.max_turns = max_turns;
 
     opts.scope = Some(ScopeDecl {
@@ -61,7 +61,7 @@ async fn cmd_run(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<()
         usage();
     }
 
-    let mut model = env_or("ZENCODE_MODEL", DEFAULT_MODEL);
+    let mut model = env_or("ZEN_MODEL", DEFAULT_MODEL);
     let mut cwd = std::env::current_dir()?;
     let mut max_turns = 12usize;
     let mut session_dir: Option<PathBuf> = None;
@@ -91,7 +91,7 @@ async fn cmd_run(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<()
     let handle = CliRunHandle::new();
     let outcome = run_cli_task(&opts, &task, sink.clone(), &handle).await?;
 
-    let dir = session_dir.unwrap_or_else(|| cwd.join(".zencode").join("sessions"));
+    let dir = session_dir.unwrap_or_else(|| cwd.join(".zen").join("sessions"));
     std::fs::create_dir_all(&dir)?;
     let ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     let path = dir.join(format!("session-{ts}.jsonl"));
@@ -184,7 +184,7 @@ const EVAL_TASKS: &[EvalTask] = &[
 ];
 
 async fn cmd_eval(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<()> {
-    let mut model = env_or("ZENCODE_MODEL", DEFAULT_MODEL);
+    let mut model = env_or("ZEN_MODEL", DEFAULT_MODEL);
     let mut max_turns = 12usize;
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -212,7 +212,7 @@ async fn cmd_eval(mut args: std::iter::Skip<std::env::Args>) -> anyhow::Result<(
 
     for t in EVAL_TASKS {
         let dir = std::env::temp_dir().join(format!(
-            "zencode-eval-{}-{}",
+            "zen-desktop-eval-{}-{}",
             t.name,
             SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis()
         ));

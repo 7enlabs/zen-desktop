@@ -31,9 +31,9 @@ Please include:
 
 ## Scope Notes
 
-ZenCode Desktop runs the ZenCode agent core locally. It executes code and accesses
+Zen Desktop runs the Zen CLI agent core locally. It executes code and accesses
 API keys by design. The threat model assumes the operator trusts the machine
-ZenCode Desktop runs on. Out of scope:
+Zen Desktop runs on. Out of scope:
 
 - Social-engineering or phishing against operators
 - Vulnerabilities in third-party model providers (report to them directly)

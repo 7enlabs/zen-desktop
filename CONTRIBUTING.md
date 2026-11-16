@@ -1,6 +1,6 @@
-# Contributing to ZenCode Desktop
+# Contributing to Zen Desktop
 
-Thank you for your interest in contributing to ZenCode Desktop! This document
+Thank you for your interest in contributing to Zen Desktop! This document
 outlines the process and expectations.
 
 ## Branch Policy
@@ -36,7 +36,7 @@ outlines the process and expectations.
 
 ## Clean-Room Rule
 
-ZenCode Desktop is built clean-room. Never copy code, prompts, or tool descriptions
+Zen Desktop is built clean-room. Never copy code, prompts, or tool descriptions
 from Claude Code, Codex, or similar tools - even from memory of leaked sources.
 Only public binaries, SDK types, official docs, and changelogs may be used
 as references.

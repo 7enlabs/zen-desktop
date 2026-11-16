@@ -24,12 +24,12 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
 use std::time::Duration;
 
-use zencode_engine::budget::TaskBudget;
-use zencode_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
-use zencode_engine::events::{DesktopEvent, RecordingSink};
-use zencode_engine::scope::ScopeDecl;
-use zencode_engine::stream_json::CliExit;
-use zencode_engine::RunOptions;
+use zen_engine::budget::TaskBudget;
+use zen_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
+use zen_engine::events::{DesktopEvent, RecordingSink};
+use zen_engine::scope::ScopeDecl;
+use zen_engine::stream_json::CliExit;
+use zen_engine::RunOptions;
 
 fn zen_bin() -> PathBuf {
     let p = std::env::var("DV3_LIVE_ZEN_BIN")

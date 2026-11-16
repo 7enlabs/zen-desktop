@@ -1,6 +1,6 @@
 # Zero-Cost Guarantee
 
-**ZenCode Desktop cannot bill you. Ever.** This is not a pricing tier, a
+**Zen Desktop cannot bill you. Ever.** This is not a pricing tier, a
 promotion, or a setting you can misconfigure. It is structural.
 
 ## How the guarantee works
@@ -15,8 +15,8 @@ promotion, or a setting you can misconfigure. It is structural.
      $0.00 per call.
    - Blocked: everything else - with a loud error, not a silent fallback:
 
-   > ZenCode blocked model 'gpt-4': only :free models are allowed.
-   > ZenCode cannot bill you - this is structural, not a setting.
+   > Zen blocked model 'gpt-4': only :free models are allowed.
+   > Zen cannot bill you - this is structural, not a setting.
 
 3. **Three enforcement points.** The check runs at engine startup/config load,
    at per-task model selection, and across every model-chain fallback id - so
@@ -51,5 +51,5 @@ promotion, or a setting you can misconfigure. It is structural.
   remote gateway does with a `:free`-named route on its side of the wire -
   "cannot bill you" means the app never attempts a paid model, not that a
   dishonest gateway cannot mislabel one.
-- `cargo test -p zencode_engine cost_firewall` runs the firewall's test suite,
+- `cargo test -p zen_engine cost_firewall` runs the firewall's test suite,
   including the proof that validation performs no I/O.

@@ -12,7 +12,7 @@ Runaway token burn is the most universal complaint about coding agents:
 - Repair loops of 20–40 iterations "leave the workspace in a worse state"
   (re-reading files until a 40k-token task consumes 180k).
 
-ZenCode is free-only, so a loop burns *quota and time* instead of money - but the
+Zen is free-only, so a loop burns *quota and time* instead of money - but the
 frustration is identical. The convergence guard stops the loop early and makes the
 agent try a different approach.
 

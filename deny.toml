@@ -35,7 +35,7 @@ allow = [
     "OpenSSL",
     "CDLA-Permissive-2.0",
 
-    "LicenseRef-ZenCode-FirstParty",
+    "LicenseRef-Zen-FirstParty",
 ]
 
 confidence-threshold = 0.8
@@ -57,15 +57,15 @@ allow-git = ["https://gitlab.com/atzenn/zencode.git"]
 
 [[licenses.clarify]]
 crate = "zen-core"
-expression = "LicenseRef-ZenCode-FirstParty"
+expression = "LicenseRef-Zen-FirstParty"
 license-files = []
 
 [[licenses.clarify]]
 crate = "zen-agent"
-expression = "LicenseRef-ZenCode-FirstParty"
+expression = "LicenseRef-Zen-FirstParty"
 license-files = []
 
 [[licenses.clarify]]
 crate = "zen-tools"
-expression = "LicenseRef-ZenCode-FirstParty"
+expression = "LicenseRef-Zen-FirstParty"
 license-files = []

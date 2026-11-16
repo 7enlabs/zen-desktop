@@ -10,7 +10,7 @@ use crate::events::{DesktopEvent, DesktopEventSink};
 
 pub const TELEMETRY_READY_EVENT: &str = "telemetry_guard_ready";
 
-pub const ZENCODE_OWNED_HOSTS: &[&str] = &[];
+pub const ZEN_OWNED_HOSTS: &[&str] = &[];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TelemetryError {
@@ -24,7 +24,7 @@ impl fmt::Display for TelemetryError {
         match self {
             TelemetryError::BlockedHost { host, allowed } => write!(
                 f,
-                "ZenCode blocked network access to '{host}': only your configured model endpoint '{allowed}' may be contacted. No telemetry is ever sent."
+                "Zen blocked network access to '{host}': only your configured model endpoint '{allowed}' may be contacted. No telemetry is ever sent."
             ),
             TelemetryError::InvalidBaseUrl { url, reason } => {
                 write!(f, "invalid model base URL '{url}': {reason}")
@@ -239,7 +239,7 @@ impl NetworkLog {
 pub struct TelemetryReport {
     pub hosts_contacted: Vec<String>,
 
-    pub zencode_hosts_contacted: Vec<String>,
+    pub zen_hosts_contacted: Vec<String>,
     pub entry_count: usize,
     pub total_bytes_up: u64,
     pub total_bytes_down: u64,
@@ -249,7 +249,7 @@ pub struct TelemetryReport {
 
 impl TelemetryReport {
     pub fn is_clean(&self) -> bool {
-        self.zencode_hosts_contacted.is_empty()
+        self.zen_hosts_contacted.is_empty()
     }
 }
 
@@ -258,32 +258,32 @@ pub struct ZeroTelemetryProof;
 impl ZeroTelemetryProof {
     pub fn generate(log: &NetworkLog) -> TelemetryReport {
         let hosts = log.distinct_hosts();
-        let zencode_hosts_contacted: Vec<String> = hosts
+        let zen_hosts_contacted: Vec<String> = hosts
             .iter()
             .filter(|h| {
-                ZENCODE_OWNED_HOSTS
+                ZEN_OWNED_HOSTS
                     .iter()
                     .any(|owned| h.eq_ignore_ascii_case(owned))
             })
             .cloned()
             .collect();
         let (up, down) = log.total_bytes();
-        let verdict = if zencode_hosts_contacted.is_empty() {
+        let verdict = if zen_hosts_contacted.is_empty() {
             format!(
-                "Clean: {} outbound request(s) to {} host(s) ({}), none owned by ZenCode. No telemetry was sent.",
+                "Clean: {} outbound request(s) to {} host(s) ({}), none owned by Zen. No telemetry was sent.",
                 log.len(),
                 hosts.len(),
                 hosts.join(", ")
             )
         } else {
             format!(
-                "VIOLATION: contacted ZenCode-owned host(s): {}. This must never happen - please report it.",
-                zencode_hosts_contacted.join(", ")
+                "VIOLATION: contacted Zen-owned host(s): {}. This must never happen - please report it.",
+                zen_hosts_contacted.join(", ")
             )
         };
         TelemetryReport {
             hosts_contacted: hosts,
-            zencode_hosts_contacted,
+            zen_hosts_contacted,
             entry_count: log.len(),
             total_bytes_up: up,
             total_bytes_down: down,
@@ -320,12 +320,12 @@ mod tests {
     #[test]
     fn guard_blocks_foreign_host() {
         let g = TelemetryGuard::from_base_url("https://ai-gateway.kilo.ai/api/v1").unwrap();
-        assert!(!g.allows("telemetry.zencode.example"));
+        assert!(!g.allows("telemetry.zen.example"));
         let err = g
-            .check_url("https://telemetry.zencode.example/v1/ping")
+            .check_url("https://telemetry.zen.example/v1/ping")
             .unwrap_err();
         assert!(matches!(err, TelemetryError::BlockedHost { .. }));
-        assert!(err.to_string().contains("telemetry.zencode.example"));
+        assert!(err.to_string().contains("telemetry.zen.example"));
     }
 
     #[test]
@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn log_save_load_roundtrip() {
-        let dir = std::env::temp_dir().join("zencode-telemetry-test");
+        let dir = std::env::temp_dir().join("zen-telemetry-test");
         let path = dir.join("netlog.ndjson");
         let _ = fs::remove_dir_all(&dir);
         let log = NetworkLog::new();
@@ -408,7 +408,7 @@ mod tests {
         );
         let report = ZeroTelemetryProof::generate(&log);
         assert!(report.is_clean());
-        assert!(report.zencode_hosts_contacted.is_empty());
+        assert!(report.zen_hosts_contacted.is_empty());
         assert_eq!(report.hosts_contacted, vec!["ai-gateway.kilo.ai"]);
         assert!(report.verdict.starts_with("Clean"));
     }
@@ -421,7 +421,7 @@ mod tests {
     }
 
     #[test]
-    fn zencode_owned_hosts_is_empty_by_design() {
-        assert!(ZENCODE_OWNED_HOSTS.is_empty());
+    fn zen_owned_hosts_is_empty_by_design() {
+        assert!(ZEN_OWNED_HOSTS.is_empty());
     }
 }

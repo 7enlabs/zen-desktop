@@ -12,9 +12,9 @@ mod fake_zen;
 
 use std::sync::Arc;
 
-use zencode_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
-use zencode_engine::convergence::ConvergencePolicy;
-use zencode_engine::events::RecordingSink;
+use zen_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
+use zen_engine::convergence::ConvergencePolicy;
+use zen_engine::events::RecordingSink;
 
 fn count(ndjson: &str, needle: &str) -> usize {
     ndjson.lines().filter(|l| l.contains(needle)).count()

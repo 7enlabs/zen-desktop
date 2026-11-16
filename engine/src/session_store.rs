@@ -51,7 +51,7 @@ impl SessionStore {
     pub fn default_root() -> anyhow::Result<PathBuf> {
         std::env::var_os("HOME")
             .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(|h| PathBuf::from(h).join(".zencode").join("sessions"))
+            .map(|h| PathBuf::from(h).join(".zen").join("sessions"))
             .ok_or_else(|| {
                 anyhow::anyhow!("cannot determine home directory (HOME/USERPROFILE unset)")
             })
@@ -364,10 +364,7 @@ mod tests {
 
     fn tmp_root(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!(
-            "zencode-session-test-{}-{name}",
-            std::process::id()
-        ));
+        p.push(format!("zen-session-test-{}-{name}", std::process::id()));
         let _ = fs::remove_dir_all(&p);
         p
     }

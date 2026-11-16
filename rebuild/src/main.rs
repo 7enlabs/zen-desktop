@@ -3,7 +3,7 @@ use cowsay_bubble::{cow, Options, Wrap};
 use std::io::{IsTerminal, Read, Write};
 
 fn usage(code: i32) -> ! {
-    eprintln!("Usage: cowsay [-bdgpstwy] [-e eyes] [-T tongue] [-f cowfile] [-r|--random] [-l] [-n] [-W <width>] [--think] [--word-wrap] [--cow-color <name>] [--color=auto|always|never] [message...]\n  -n  disable wrapping\n  -W  wrap column (default 40; 'auto' = terminal width from $COLUMNS)\n  --word-wrap  break at spaces instead of hard cut (ZenCode extension)\n  --cow-color  red|green|yellow|blue|magenta|cyan|white|gray|bold|rainbow|aurora (ZenCode extension)\n  --color  when to colour: auto (tty, honours NO_COLOR/CLICOLOR_FORCE), always, never");
+    eprintln!("Usage: cowsay [-bdgpstwy] [-e eyes] [-T tongue] [-f cowfile] [-r|--random] [-l] [-n] [-W <width>] [--think] [--word-wrap] [--cow-color <name>] [--color=auto|always|never] [message...]\n  -n  disable wrapping\n  -W  wrap column (default 40; 'auto' = terminal width from $COLUMNS)\n  --word-wrap  break at spaces instead of hard cut (Zen extension)\n  --cow-color  red|green|yellow|blue|magenta|cyan|white|gray|bold|rainbow|aurora (Zen extension)\n  --color  when to colour: auto (tty, honours NO_COLOR/CLICOLOR_FORCE), always, never");
     std::process::exit(code)
 }
 

@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn verify_file_roundtrip() {
-        let dir = std::env::temp_dir().join(format!("zencode-r15-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("zen-r15-test-{}", std::process::id()));
         let _ = fs::create_dir_all(&dir);
         let path = dir.join("artifact.bin");
         let mut f = fs::File::create(&path).unwrap();
@@ -399,8 +399,7 @@ mod tests {
 
     #[test]
     fn verify_file_missing_signature_errors() {
-        let dir =
-            std::env::temp_dir().join(format!("zencode-r15-test-nosig-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("zen-r15-test-nosig-{}", std::process::id()));
         let _ = fs::create_dir_all(&dir);
         let path = dir.join("artifact.bin");
         fs::write(&path, TEST_FILE_BYTES).unwrap();
@@ -447,7 +446,7 @@ mod tests {
     fn release_key_is_wired() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let conf = fs::read_to_string(root.join("desktop/src-tauri/tauri.conf.json")).unwrap();
-        let pub_file = fs::read_to_string(root.join("docs/keys/zencode-release.pub")).unwrap();
+        let pub_file = fs::read_to_string(root.join("docs/keys/zen-release.pub")).unwrap();
         let expected = pub_file.lines().nth(1).unwrap().trim();
         assert_eq!(updater_public_key(&conf).as_deref(), Some(expected));
     }

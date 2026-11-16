@@ -43,7 +43,7 @@ SIGNATURE="$(tr -d '\n' < "$SIG_FILE")"
 cat > "$DIST/latest.json" <<EOF
 {
   "version": "$VERSION",
-  "notes": "ZenCode Desktop $TAG - see CHANGELOG.md",
+  "notes": "Zen Desktop $TAG - see CHANGELOG.md",
   "pub_date": "$PUB_DATE",
   "platforms": {
     "linux-x86_64": {

@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_notification::{Action, ActionType, NotificationExt};
 
-pub const SESSION_ACTIONS_ID: &str = "zencode-session";
+pub const SESSION_ACTIONS_ID: &str = "zen-session";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NotificationKind {
@@ -132,9 +132,9 @@ pub fn notify_session_end<R: Runtime>(
         return Ok(());
     }
     let title = if success {
-        "ZenCode - task finished"
+        "Zen - task finished"
     } else {
-        "ZenCode - task failed"
+        "Zen - task failed"
     };
     let body = format!("{} - {}", truncate(summary, 80), session_id);
     app.notification()
@@ -161,7 +161,7 @@ pub fn notify_approval_needed<R: Runtime>(
     }
     app.notification()
         .builder()
-        .title("ZenCode - approval needed")
+        .title("Zen - approval needed")
         .body(format!(
             "Agent is waiting for approval: `{}` ({})",
             truncate(tool_name, 60),
@@ -188,7 +188,7 @@ pub fn cmd_notify_still_working<R: Runtime>(
     }
     app.notification()
         .builder()
-        .title("ZenCode - still working…")
+        .title("Zen - still working…")
         .body(format!(
             "Run {} has been going for {} min - no action needed.",
             session_id, elapsed_mins

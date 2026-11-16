@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common problems and fixes for building, testing, and running ZenCode Desktop.
+Common problems and fixes for building, testing, and running Zen Desktop.
 Each entry: **symptom → likely cause → fix**.
 
 ## Build issues
@@ -13,7 +13,7 @@ Each entry: **symptom → likely cause → fix**.
 **Cause:** `cargo` defaults `CARGO_TARGET_DIR` under the project; on small disks or tmpfs (`/tmp` is often a 512M tmpfs) a full workspace build can exhaust it.
 **Fix:** point the target dir at a persistent location with room:
 ```sh
-export CARGO_TARGET_DIR=~/workspace/zencode-target
+export CARGO_TARGET_DIR=~/workspace/zen-target
 cargo build --locked
 ```
 

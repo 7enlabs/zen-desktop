@@ -11,9 +11,9 @@ mod fake_zen;
 
 use std::sync::Arc;
 
-use zencode_engine::budget::TaskBudget;
-use zencode_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
-use zencode_engine::events::RecordingSink;
+use zen_engine::budget::TaskBudget;
+use zen_engine::cli_spawn::{run_cli_task_with_binary, CliRunHandle};
+use zen_engine::events::RecordingSink;
 
 fn has_budget_event(sink: &RecordingSink) -> bool {
     sink.to_ndjson()

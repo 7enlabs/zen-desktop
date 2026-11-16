@@ -1,7 +1,7 @@
 # v0.3.0 Release Checklist
 
 Tag v0.3.0 per PLAN.md when: **g5 eval ≥5/10 passes + CI green on 3 OS**.
-Owner of merges: Z App (ZD Leader never merges). All PRs below are open on `7enlab/zencode-desktop`.
+Owner of merges: Z App (ZD Leader never merges). All PRs below are open on `7enlabs/zen-desktop`.
 
 ## 1. Pre-conditions - PRs that must merge first
 
@@ -10,7 +10,7 @@ Owner of merges: Z App (ZD Leader never merges). All PRs below are open on `7enl
 | g1 | (on main) | engine + fake-LLM tests, CI 3 OS |
 | s1 | (on main, `eb5d364`) | event schema v1 + contract tests |
 | g2 | #3 `lead/g2-smoke` | real `:free` run, 2 turns, $0.0 |
-| g2+g5 | #4 `lead/claude-learnings` | `zencode run`/`eval` binary, eval 10/10 pass |
+| g2+g5 | #4 `lead/claude-learnings` | `zen-desktop run`/`eval` binary, eval 10/10 pass |
 | g4 | #6 `lead/g4-prompt-budget` | prompt ≤1200 tokens, fail-fast |
 | g3 | #33 `lead/g3-rategate` | daily quota + model fallback |
 | g3 infra | #8 `lead/p2-pretooluse-hook` | PreToolUse hook point |
@@ -19,7 +19,7 @@ Owner of merges: Z App (ZD Leader never merges). All PRs below are open on `7enl
 Merge order: #1 → #3 → #4 → #6 → #8 → #33. Docs-only PRs (#2, #5, #7, #10–#22, #24, #25, #27–#29, #38) may merge any time; code PRs #23, #26, #30–#32, #34–#37, #39–#41 are v0.4.0/v0.5.0 scope and must NOT block v0.3.0.
 
 Gate checks before tagging:
-- [ ] `zencode eval` ≥5/10 pass on a real `:free` model (rerun if CLI rev changed)
+- [ ] `zen-desktop eval` ≥5/10 pass on a real `:free` model (rerun if CLI rev changed)
 - [ ] CI green on linux/windows/macos for the merge commit
 - [ ] `cargo audit` clean, `cargo deny check` clean
 
@@ -34,9 +34,9 @@ Gate checks before tagging:
 
 1. Bump `engine/Cargo.toml`: `0.3.0-dev` → `0.3.0`. (`core` 0.1.0 and `rebuild` 0.2.0 keep their own versions.)
 2. CHANGELOG entry under `## [0.3.0] - YYYY-MM-DD`: g2/g3/g4/g5 features, `:free`-only policy, eval results.
-3. `git tag -a v0.3.0 -m "v0.3.0: agent engine on ZenCode CLI"` and push the tag - the existing `release.yml` builds binaries for linux-x86_64, macos-arm64, windows-x86_64.
+3. `git tag -a v0.3.0 -m "v0.3.0: agent engine on Zen CLI"` and push the tag - the existing `release.yml` builds binaries for linux-x86_64, macos-arm64, windows-x86_64.
 4. GitHub Release notes template:
-   > **v0.3.0** - `zencode run` + `zencode eval` on free-only models.
+   > **v0.3.0** - `zen-desktop run` + `zen-desktop eval` on free-only models.
    > Includes: prompt budget (1200 tokens), RateGate daily quota, session persistence.
    > Requires no API keys for `:free` models. See `docs/troubleshooting.md`.
 

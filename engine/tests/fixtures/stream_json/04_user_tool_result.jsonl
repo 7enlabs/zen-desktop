@@ -1,1 +1,1 @@
-{"v":1,"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"{\"productName\": \"zencode-desktop\"}"}]}}
+{"v":1,"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"{\"productName\": \"zen-desktop\"}"}]}}

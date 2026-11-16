@@ -28,20 +28,16 @@ pub struct CheckpointManager {
 impl CheckpointManager {
     pub fn new(workdir: impl AsRef<Path>) -> Result<Self> {
         let workdir = workdir.as_ref().to_path_buf();
-        let repo = workdir.join(".zencode").join("checkpoints");
+        let repo = workdir.join(".zen").join("checkpoints");
         fs::create_dir_all(&repo)
             .with_context(|| format!("create shadow repo dir {}", repo.display()))?;
         if !repo.join(".git").exists() {
             git(&repo, &["init"]).context("git init shadow repo")?;
         }
 
-        git(&repo, &["config", "user.name", "zencode-checkpoints"])
-            .context("git config user.name")?;
-        git(
-            &repo,
-            &["config", "user.email", "checkpoints@zencode.local"],
-        )
-        .context("git config user.email")?;
+        git(&repo, &["config", "user.name", "zen-checkpoints"]).context("git config user.name")?;
+        git(&repo, &["config", "user.email", "checkpoints@zen.local"])
+            .context("git config user.email")?;
         git(&repo, &["config", "commit.gpgsign", "false"]).context("git config commit.gpgsign")?;
 
         git(&repo, &["config", "core.autocrlf", "false"]).context("git config core.autocrlf")?;
@@ -149,7 +145,7 @@ impl CheckpointManager {
                 let rel = path
                     .strip_prefix(&self.workdir)
                     .with_context(|| format!("relativize {}", path.display()))?;
-                if rel.starts_with(".zencode") || rel.starts_with(".git") {
+                if rel.starts_with(".zen") || rel.starts_with(".git") {
                     continue;
                 }
                 let ft = entry
@@ -230,7 +226,7 @@ mod tests {
 
     fn tmpdir() -> PathBuf {
         let dir = std::env::temp_dir().join(format!(
-            "zencode-ckpt-test-{}-{}",
+            "zen-ckpt-test-{}-{}",
             std::process::id(),
             COUNTER.fetch_add(1, Ordering::SeqCst)
         ));
@@ -277,10 +273,7 @@ mod tests {
 
         assert_eq!(fs::read_to_string(wd.join("new.txt")).unwrap(), "brand new");
         assert!(report.restored_files.contains(&"a.txt".to_string()));
-        assert!(!report
-            .restored_files
-            .iter()
-            .any(|f| f.starts_with(".zencode")));
+        assert!(!report.restored_files.iter().any(|f| f.starts_with(".zen")));
 
         let list2 = mgr.list().expect("list after restore");
         assert_eq!(list2.len(), 3);

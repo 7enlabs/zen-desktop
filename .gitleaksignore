@@ -1,4 +1,4 @@
-# Gitleaks baseline for zencode-desktop: fingerprints of reviewed findings.
+# Gitleaks baseline for zen-desktop: fingerprints of reviewed findings.
 # Format: commit:file:rule:line. Add an entry only after review, never to
 # silence a real secret (rotate it instead).
 #

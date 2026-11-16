@@ -24,11 +24,11 @@ jobs:
           mkdir -p dist
           cp target/${{ matrix.target }}/release/${{ matrix.bin }} dist/
           cp ../LICENSE ../README.md dist/
-          cd dist && if [ "${{ runner.os }}" = Windows ]; then 7z a ../zencode-cowsay-${{ matrix.target }}.zip . >/dev/null; else tar czf ../zencode-cowsay-${{ matrix.target }}.tar.gz .; fi
+          cd dist && if [ "${{ runner.os }}" = Windows ]; then 7z a ../zen-cowsay-${{ matrix.target }}.zip . >/dev/null; else tar czf ../zen-cowsay-${{ matrix.target }}.tar.gz .; fi
       - uses: actions/upload-artifact@v5
         with:
-          name: zencode-cowsay-${{ matrix.target }}
-          path: rebuild/zencode-cowsay-${{ matrix.target }}.*
+          name: zen-cowsay-${{ matrix.target }}
+          path: rebuild/zen-cowsay-${{ matrix.target }}.*
   publish:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')

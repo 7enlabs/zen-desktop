@@ -2,7 +2,7 @@
 name = "cowsay_bubble"
 version = "0.2.0"
 edition = "2021"
-description = "ZenCode Desktop pilot: std-only Rust rebuild of npm cowsay@1.6.0 speech bubble"
+description = "Zen Desktop pilot: std-only Rust rebuild of npm cowsay@1.6.0 speech bubble"
 license = "MIT"
 authors = ["7EN Labs <7enlab@gmail.com>"]
 repository = "https://github.com/7enlabs/zen-desktop"

@@ -1,5 +1,5 @@
 use std::io::Write;
-use zencode_core::*;
+use zen_core::*;
 
 fn tmp(name: &str) -> std::path::PathBuf {
     let d = std::env::temp_dir().join(format!("zc-{}-{name}", std::process::id()));

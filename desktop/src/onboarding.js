@@ -9,7 +9,7 @@ const OnboardingStep = Object.freeze({
   SKIPPED: "skipped",
 });
 
-const ONBOARDING_STORAGE_KEY = "zencode.onboarding.v1";
+const ONBOARDING_STORAGE_KEY = "zen.onboarding.v1";
 
 // Endpoint + keyless flags verified 2026-11-05 from the work box (curl, no key):
 // - https://ai-gateway.kilo.ai/api/v1/models lists nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free;
@@ -215,7 +215,7 @@ function recommendedDefaultModel(probeResults) {
   return FREE_MODELS.find((m) => m.keyless) || FREE_MODELS[0];
 }
 
-const DEMO_PROMPT = "Explain in one sentence what ZenCode Desktop is.";
+const DEMO_PROMPT = "Explain in one sentence what Zen Desktop is.";
 
 function buildDemoRequest(model) {
   return {
@@ -238,7 +238,7 @@ class OnboardingUI {
     this.overlay = doc.createElement("div");
     this.overlay.id = "onboarding-overlay";
     this.overlay.innerHTML = `
-      <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to ZenCode">
+      <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to Zen">
         <div class="onboarding-progress"><span id="ob-step-label"></span><button id="ob-skip" class="link">Skip</button></div>
         <div id="ob-body"></div>
         <div class="onboarding-nav">
@@ -267,7 +267,7 @@ class OnboardingUI {
         label.textContent = "Step 1 of 3 - Welcome";
         nextBtn.textContent = "Get started →";
         body.innerHTML = `
-          <h2>⬢ Welcome to ZenCode Desktop</h2>
+          <h2>⬢ Welcome to Zen Desktop</h2>
           <p>The AI coding agent that <strong>cannot bill you</strong>.</p>
           <p>In the next 60 seconds you'll pick a <strong>free</strong> model and run your first task.</p>`;
         break;
@@ -401,7 +401,7 @@ class OnboardingUI {
         const data = await res.json();
         text = (data.choices && data.choices[0] && data.choices[0].message.content) || "(empty response)";
       } else {
-        text = "(demo) ZenCode Desktop is the AI coding agent that cannot bill you.";
+        text = "(demo) Zen Desktop is the AI coding agent that cannot bill you.";
       }
       out.textContent = text.trim();
     } catch (e) {

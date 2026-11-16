@@ -9,8 +9,8 @@
 
 use std::path::PathBuf;
 
-use zencode_engine::events::DesktopEvent;
-use zencode_engine::stream_json::{
+use zen_engine::events::DesktopEvent;
+use zen_engine::stream_json::{
     interpret_exit_code, parse_stream_json, to_desktop_events, CliExit, CliLine,
 };
 
@@ -112,7 +112,7 @@ fn parses_user_tool_result() {
             ..
         } => {
             assert_eq!(tool_use_id, "toolu_01");
-            assert!(content.contains("zencode-desktop"), "{content}");
+            assert!(content.contains("zen-desktop"), "{content}");
             assert!(!is_error);
         }
         other => panic!("unexpected event: {other:?}"),
