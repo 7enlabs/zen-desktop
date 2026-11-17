@@ -46,11 +46,11 @@ use std::time::Instant;
 use serde_json::{json, Value};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
-use zencode_engine::cli_spawn::{build_argv, resolve_zen_binary};
-use zencode_engine::stream_json::{
+use zen_engine::cli_spawn::{build_argv, resolve_zen_binary};
+use zen_engine::stream_json::{
     interpret_exit_code, parse_stream_json, to_desktop_events, CliExit, CliStreamEvent,
 };
-use zencode_engine::RunOptions;
+use zen_engine::RunOptions;
 
 /// One envelope as it arrived on the child's stdout.
 #[derive(Debug, Clone)]
