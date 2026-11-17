@@ -33,10 +33,10 @@ The Desktop consumes the CLI crates through a pinned-rev git dependency (current
 | g4 | Prompt budget: measure CLI system prompt + tool defs, CI test ≤1,200 tokens (or minimal tool profile) | TODO | test print token count, fail if exceeded |
 | g5 | `zencode eval` 10 tasks, table of requests/tokens/429/edit-fail/pass | TODO | run with ≥1 :free model; tag v0.3.0 when ≥5/10 + CI green |
 | g6 | Desktop UI (after v0.3.0) | TODO | - |
-## Competitor Research Roadmap (2026-10-17, docs/research/competitors-2026-10-17.md §3)
+## External-Agent Research Roadmap (2026-10-17, docs/research/competitors-2026-10-17.md §3)
 - v0.3.0: (1) `zencode run` + shell/read/str_replace + JSONL; (2) RateGate + ModelChain (429, cap 50 req/day :free, fallback); (3) strict tool-call parser + text-mode fallback (1 bash block) + lenient str_replace (whitespace/CRLF/indent, still exactly 1 match); (4) system prompt + tool defs ≤ 1.200 token (CI test) + trim tool output; (5) `zencode eval` 10 tasks, table of requests/tokens/429/edit-fail/pass. Tag when ≥1 model :free actually done on ≥5/10.
 - v0.4.0: multiple tool calls/turn + read-only parallel; compaction; checkpoint/undo + atomic write; verify loop `--until` + plan mode.
-- v0.5.0: repo map ≤1k token; hooks; sandbox Linux → macOS; ACP for Zed.
+- v0.5.0: repo map ≤1k token; hooks; sandbox Linux → macOS; ACP for external editors.
 
 ## Design Notes
 - `core/` is an independent crate (separate Cargo.lock), not merged into workspace to avoid changing the `rebuild/target` path that release.yml currently uses.

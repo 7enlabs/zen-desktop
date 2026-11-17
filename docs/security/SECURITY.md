@@ -46,7 +46,7 @@ Severity: 🔴 Critical · 🟠 Major · 🟡 Minor. "Sweep fix" = what this bra
   has no bridge to the skill registry's approval set - approving in one place
   may not be honored in the other. **Verify** the wiring when both PRs land.
 - [ ] **C14** 🟠 The skill catalog invokes `npx -y <package>` **unpinned**.
-  This is the exact Clinejection-class vector (R7's raison d'être): a
+  This is the exact install-time prompt-injection vector (R7's raison d'être): a
   compromised npm package runs at install time. **Decision needed:** pin to
   content hashes / a lockfile, or vendor the catalog packages.
 - [ ] **N3** 🟡 MCP `allowed_tools` is parsed but enforcement lives in the

@@ -14,7 +14,7 @@
 7. print " "+"_"*(max+2), lines, " "+"-"*(max+2), then the default cow (copy spec/cases/01.out tail).
 ## Layout
 src/main.rs (CLI), src/balloon.rs (normalize/wrap/width/render), src/cow.rs, tests/golden.rs reading spec/cases.
-## Roadmap (from competitor research, opt-in flags, never change default output)
+## Roadmap (from external-tool research, opt-in flags, never change default output)
 - DONE 2026-10-16 `--word-wrap`: greedy by display columns, break at spaces, collapse space runs, hard-cut words wider than W; default output unchanged.
 - DONE 2026-10-16 190 cowfiles embedded (include_str!), -f name|path, -r/--random, -l (Node readdir order), modes -bdgpstwy, -e, -T, --think / cowthink argv0. Golden 21/21.
 - DONE 2026-10-16 `-W auto` = $COLUMNS - 4, fallback 40 (std-only; ioctl/WinAPI later).

@@ -1,4 +1,4 @@
-# Competitor Config Import
+# External Config Import
 
 One command to switch from another AI coding tool: Zen CLI detects what's
 installed, shows a dry-run preview with per-item checkboxes, and imports
@@ -18,16 +18,16 @@ see below) runs `config_import::plan()` for the dry-run, renders each
 
 ## What gets imported
 
-| Competitor | Detected at | Models | Skills | MCP servers | Commands | Rules |
-|---|---|---|---|---|---|---|
-| Claude Code | `~/.claude.json`, `~/.claude/` | `settings.json` → `model` | `~/.claude/skills/*/SKILL.md` | `~/.claude.json` / `settings.json` → `mcpServers` | `~/.claude/commands/**/*.md` | `~/.claude/CLAUDE.md` |
-| Codex CLI | `~/.codex/` | `config.toml` → `model` (+ `model_provider` base URL) | - | - | - | - |
-| Cursor | `~/.cursor/` | - | - | `mcp.json` | - | project `.muse/rules/` (per-project, see note) |
-| Continue | `~/.continue/` | `config.yaml` / `config.json` → `models[]` | - | - | - | - |
-| Cline | VS Code globalStorage `saoudrizwan.claude-dev` | - | - | `cline_mcp_settings.json` | - | - |
-| Roo Code | VS Code globalStorage `rooveterinaryinc.roo-cline` | - | - | `mcp_settings.json` | - | - |
-| Aider | `~/.aider.conf.yml` | `model`, `weak-model`, `editor-model` | - | - | - | - |
-| OpenCode | `~/.config/opencode/opencode.json` | `"model": "provider/model"` | - | `"mcp"` | - | - |
+| Source | Models | Skills | MCP servers | Commands | Rules |
+|---|---|---|---|---|---|
+| `~/.claude.json`, `~/.claude/` | `settings.json` → `model` | `~/.claude/skills/*/SKILL.md` | `~/.claude.json` / `settings.json` → `mcpServers` | `~/.claude/commands/**/*.md` | `~/.claude/CLAUDE.md` |
+| `~/.codex/` | `config.toml` → `model` (+ `model_provider` base URL) | - | - | - | - |
+| `~/.cursor/` | - | - | `mcp.json` | - | project `.muse/rules/` (per-project, see note) |
+| `~/.continue/` | `config.yaml` / `config.json` → `models[]` | - | - | - | - |
+| VS Code globalStorage `saoudrizwan.claude-dev` | - | - | `cline_mcp_settings.json` | - | - |
+| VS Code globalStorage `rooveterinaryinc.roo-cline` | - | - | `mcp_settings.json` | - | - |
+| `~/.aider.conf.yml` | `model`, `weak-model`, `editor-model` | - | - | - | - |
+| `~/.config/opencode/opencode.json` | `"model": "provider/model"` | - | `"mcp"` | - | - |
 
 macOS VS Code storage lives under
 `~/Library/Application Support/Code/...`; both locations are probed.
@@ -39,17 +39,17 @@ macOS VS Code storage lives under
 | Skill | `~/.zen/skills/<name>/` | **UNTRUSTED** - approve before first use (Project-equivalent, PR #73) |
 | MCP server | merged into `~/.zen/mcp.json` | **Untrusted** - every tool call asks until approved (PR #77) |
 | Command | `~/.zen/commands/<name>.md` | n/a |
-| Rule / memory | `~/.zen/imported/<competitor>-<file>` | n/a |
+| Rule / memory | `~/.zen/imported/<source>-<file>` | n/a |
 | Model | `~/.zen/imported-providers.json` | suggestions only - activate in Settings → Providers |
 
-Server names are namespaced (`claude-code-gh`, `cursor-sqlite`, …) so two
+Server names are namespaced (`<source>-gh`, `<source>-sqlite`, …) so two
 tools can define a server with the same name. Existing Zen files are
 never overwritten: the item is deselected in the preview and skipped at
 apply time with a note.
 
 ## Model mapping
 
-Competitor model strings are translated to Zen provider terms
+Imported model strings are translated to Zen provider terms
 (seam for PR #66 `ProviderKind`):
 
 | Input | Maps to |
@@ -66,7 +66,7 @@ Competitor model strings are translated to Zen provider terms
 | `moonshot/...`, `kimi*` | `https://api.moonshot.ai/v1` |
 | `zhipu/...`, `glm*` | `https://open.bigmodel.cn/api/paas/v4` |
 | `qwen/...`, `dashscope/...` | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| Codex `[model_providers.*]` | base URL matched against the table above |
+| TOML `[model_providers.*]` (`~/.codex/config.toml`) | base URL matched against the table above |
 | anything else | kept verbatim for manual mapping |
 
 ## Secrets: detected, listed, never copied

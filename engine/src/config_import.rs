@@ -32,16 +32,19 @@ impl Competitor {
         ]
     }
 
+    /// User-visible label for an import source: the config location it was
+    /// read from, never a brand name (clean-room: no competitor names in
+    /// prose shown to the user).
     pub fn display_name(&self) -> &'static str {
         match self {
-            Competitor::ClaudeCode => "Claude Code",
-            Competitor::Codex => "Codex CLI",
-            Competitor::Cursor => "Cursor",
-            Competitor::Continue => "Continue",
-            Competitor::Cline => "Cline",
-            Competitor::RooCode => "Roo Code",
-            Competitor::Aider => "Aider",
-            Competitor::OpenCode => "OpenCode",
+            Competitor::ClaudeCode => "~/.claude.json",
+            Competitor::Codex => "~/.codex/config.toml",
+            Competitor::Cursor => "~/.cursor/mcp.json",
+            Competitor::Continue => "~/.continue/",
+            Competitor::Cline => "VS Code storage (cline)",
+            Competitor::RooCode => "VS Code storage (roo-cline)",
+            Competitor::Aider => "~/.aider.conf.yml",
+            Competitor::OpenCode => "~/.config/opencode/opencode.json",
         }
     }
 
@@ -698,10 +701,8 @@ fn collect_claude_code(ctx: &mut Ctx) {
             ctx.push_model(c, dot_json.clone(), "default model".into(), model);
         }
     } else if dot_json.exists() {
-        ctx.warnings.push(format!(
-            "Claude Code: could not parse {} - skipped",
-            dot_json.display()
-        ));
+        ctx.warnings
+            .push(format!("could not parse {} - skipped", dot_json.display()));
     }
     let dir = ctx.home.join(".claude");
     if !dir.is_dir() {
@@ -717,10 +718,8 @@ fn collect_claude_code(ctx: &mut Ctx) {
 
         scan_json_for_secrets(ctx, c, &settings, &v, "settings");
     } else if settings.exists() {
-        ctx.warnings.push(format!(
-            "Claude Code: could not parse {} - skipped",
-            settings.display()
-        ));
+        ctx.warnings
+            .push(format!("could not parse {} - skipped", settings.display()));
     }
     collect_skill_dirs(ctx, c, &dir.join("skills"));
     collect_commands(ctx, c, &dir.join("commands"));
@@ -748,7 +747,7 @@ fn collect_codex(ctx: &mut Ctx) {
                     c,
                     &config,
                     key,
-                    "Codex config declares a secret - paste it into Zen Settings yourself",
+                    "imported config declares a secret - paste it into Zen Settings yourself",
                 );
             }
         }
@@ -768,9 +767,12 @@ fn collect_codex(ctx: &mut Ctx) {
                         Some(p) => mapping.provider = p,
                         None => {
                             ctx.warnings.push(format!(
-                                "Codex: model '{}' uses custom provider '{}' - kept for manual mapping",
+                                "model '{}' uses custom provider '{}' - kept for manual mapping",
                                 value,
-                                provider_urls.get(provider_name).map(|s| s.as_str()).unwrap_or(provider_name)
+                                provider_urls
+                                    .get(provider_name)
+                                    .map(|s| s.as_str())
+                                    .unwrap_or(provider_name)
                             ));
                             mapping.provider = MappedProvider::Unknown;
                             mapping.suggested_name = value.clone();
@@ -797,10 +799,8 @@ fn collect_codex(ctx: &mut Ctx) {
             }
         }
     } else if config.exists() {
-        ctx.warnings.push(format!(
-            "Codex: could not parse {} - skipped",
-            config.display()
-        ));
+        ctx.warnings
+            .push(format!("could not parse {} - skipped", config.display()));
     }
 
     let auth = dir.join("auth.json");
@@ -810,7 +810,7 @@ fn collect_codex(ctx: &mut Ctx) {
             c,
             &auth,
             "OPENAI_API_KEY (auth.json)",
-            "Codex OAuth/API key - sign in again inside Zen Settings; it is never copied",
+            "OAuth/API key found in imported config - sign in again inside Zen Settings; it is never copied",
         );
     }
 }
@@ -825,13 +825,11 @@ fn collect_cursor(ctx: &mut Ctx) {
     if let Some(v) = read_json(&mcp) {
         collect_mcp_map(ctx, c, &mcp, &v);
     } else if mcp.exists() {
-        ctx.warnings.push(format!(
-            "Cursor: could not parse {} - skipped",
-            mcp.display()
-        ));
+        ctx.warnings
+            .push(format!("could not parse {} - skipped", mcp.display()));
     }
     ctx.warnings.push(
-        "Cursor: project rules live in each project's .muse/rules/ - open the project in Zen Desktop and import from there"
+        "project rules live in each project's .muse/rules/ - open the project in Zen Desktop and import from there"
             .to_string(),
     );
 }
@@ -852,7 +850,7 @@ fn collect_continue(ctx: &mut Ctx) {
     }
     if !json_cfg.exists() && !yaml_cfg.exists() {
         ctx.warnings
-            .push("Continue: no config.json or config.yaml found".to_string());
+            .push("no config.json or config.yaml found under ~/.continue/".to_string());
     }
 }
 
@@ -1028,7 +1026,7 @@ fn collect_aider(ctx: &mut Ctx) {
                     c,
                     &p,
                     k,
-                    "Aider config declares a secret - paste it into Zen Settings yourself",
+                    "imported config declares a secret - paste it into Zen Settings yourself",
                 );
                 continue;
             }
@@ -1036,7 +1034,7 @@ fn collect_aider(ctx: &mut Ctx) {
         for key in ["model", "weak-model", "editor-model"] {
             if let Some(v) = pairs.get(key) {
                 if !v.is_empty() {
-                    ctx.push_model(c, p.clone(), format!("aider {}", key), v);
+                    ctx.push_model(c, p.clone(), format!("imported {}", key), v);
                 }
             }
         }
@@ -1048,10 +1046,8 @@ fn collect_opencode(ctx: &mut Ctx) {
     let cfg = ctx.home.join(".config/opencode/opencode.json");
     let Some(v) = read_json(&cfg) else {
         if cfg.exists() {
-            ctx.warnings.push(format!(
-                "OpenCode: could not parse {} - skipped",
-                cfg.display()
-            ));
+            ctx.warnings
+                .push(format!("could not parse {} - skipped", cfg.display()));
         }
         return;
     };
@@ -1068,7 +1064,7 @@ fn collect_opencode(ctx: &mut Ctx) {
                 &cfg,
                 pcfg,
                 &format!("provider.{}", name),
-                &format!("OpenCode provider '{}'", name),
+                &format!("imported provider '{}'", name),
             );
         }
     }
@@ -1175,7 +1171,7 @@ pub fn plan(home: &Path, zhome: &Path) -> Result<ImportPlan> {
     }
     if detected.is_empty() {
         ctx.warnings.push(
-            "No competitor tools detected - nothing to import. Supported: Claude Code, Codex CLI, Cursor, Continue, Cline, Roo Code, Aider, OpenCode.".to_string(),
+            "No importable configs detected - nothing to import. Supported config locations are listed in docs/config-import.md.".to_string(),
         );
     }
 
@@ -1487,7 +1483,7 @@ mod tests {
         assert!(plan
             .warnings
             .iter()
-            .any(|w| w.contains("No competitor tools detected")));
+            .any(|w| w.contains("No importable configs detected")));
 
         assert!(!zhome.exists());
     }
