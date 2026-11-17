@@ -10,10 +10,8 @@
 //! Invariants (same as tiers 1-2): the parser is never modified to force
 //! green; a failing assert is reported as a finding, not weakened.
 
-use zencode_engine::events::DesktopEvent;
-use zencode_engine::stream_json::{
-    interpret_exit_code, parse_stream_json, to_desktop_events, CliExit,
-};
+use zen_engine::events::DesktopEvent;
+use zen_engine::stream_json::{interpret_exit_code, parse_stream_json, to_desktop_events, CliExit};
 
 #[test]
 #[ignore]

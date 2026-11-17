@@ -1,15 +1,15 @@
 # Signed Releases (R15)
 
-Every ZenCode Desktop release is cryptographically signed with
+Every Zen Desktop release is cryptographically signed with
 [minisign](https://jedisct1.github.io/minisign/) (Ed25519). Users can verify
-that a downloaded artifact was built by the ZenCode team and was not tampered
+that a downloaded artifact was built by the Zen team and was not tampered
 with in transit.
 
 ## Trust model
 
 - **One release keypair** for the whole project. The **secret key** is held
   by Z App (project lead) outside the repository. The **public key** is
-  committed as `docs/keys/zencode-release.pub`, embedded in
+  committed as `docs/keys/zen-release.pub`, embedded in
   `desktop/src-tauri/tauri.conf.json` (`plugins.updater.pubkey`, as the base64
   of the whole `.pub` file - the format Tauri expects) and mirrored below.
 - The Tauri auto-updater **refuses to install** any update whose signature
@@ -20,7 +20,7 @@ with in transit.
 > **Status (2026-10-18):** the release keypair has been generated
 > (key id `A459EE7B787B86FF`) and the public key is wired. The engine test
 > `release_signing::tests::release_key_is_wired` fails the build if
-> `tauri.conf.json` and `docs/keys/zencode-release.pub` ever disagree or the
+> `tauri.conf.json` and `docs/keys/zen-release.pub` ever disagree or the
 > key is missing/placeholder. There is no separate CI job for this yet.
 >
 > The secret key was generated **without a password** (`minisign -G -W`),
@@ -30,7 +30,7 @@ with in transit.
 
 ## Release public key
 
-Key id `A459EE7B787B86FF` (file: `docs/keys/zencode-release.pub`):
+Key id `A459EE7B787B86FF` (file: `docs/keys/zen-release.pub`):
 
 ```
 untrusted comment: minisign public key A459EE7B787B86FF
@@ -39,22 +39,22 @@ RWT/hnt4e+5ZpJXAoEvIN4/C6zd6KY21MSADXo6RXLx9eayno0OMrPfu
 
 ## Signing a release (maintainer)
 
-Prerequisites: the release secret key (`zencode-release.key`), `minisign`
+Prerequisites: the release secret key (`zen-release.key`), `minisign`
 installed, artifacts already built (`.AppImage`, `.dmg`, `.msi`/`.exe`,
 `latest.json`).
 
 ```bash
 # From the repo root. Signs every artifact in dist/ and writes dist/SHA256SUMS.
-MINISIGN_KEY=/secure/path/zencode-release.key tools/sign-release.sh v0.4.0 dist/
+MINISIGN_KEY=/secure/path/zen-release.key tools/sign-release.sh v0.4.0 dist/
 ```
 
 What the script does:
 1. Refuses to run if `MINISIGN_KEY` is unset or the file does not exist.
-2. Refuses to run if `tauri.conf.json` or `docs/keys/zencode-release.pub` is
+2. Refuses to run if `tauri.conf.json` or `docs/keys/zen-release.pub` is
    missing, or the updater pubkey is still a `PLACEHOLDER`.
 3. For each artifact file: `minisign -S -x <file>.minisig -s $MINISIGN_KEY -m <file>`
    (trusted comment records the version and filename), then re-verifies the
-   new signature against the published `docs/keys/zencode-release.pub`, so a
+   new signature against the published `docs/keys/zen-release.pub`, so a
    wrong secret key fails the run instead of shipping unverifiable artifacts.
 4. Writes `SHA256SUMS` and signs that too (`SHA256SUMS.minisig`), so a single
    signature covers the whole release.
@@ -83,7 +83,7 @@ and `release-publish` in `.gitlab-ci.yml`:
 **Signed-version check.** The updater plugin always verifies the artifact
 signature, but the manifest `version` is unsigned. The app therefore installs a
 `default_version_comparator` that calls
-`zencode_engine::release_signing::check_update_offer`: the offered version must
+`zen_engine::release_signing::check_update_offer`: the offered version must
 be newer than the running one, must appear as a `_`-separated token of the
 signed file name, and the download URL must point at that same file. A replayed
 old signature or a relabeled manifest is refused before download. macOS and
@@ -94,7 +94,7 @@ Windows CI release jobs are not set up yet.
 ```bash
 # 1. Get the release public key (from this file or the website).
 # 2. Verify:
-tools/verify-release.sh docs/keys/zencode-release.pub ZenCode-0.4.0.AppImage
+tools/verify-release.sh docs/keys/zen-release.pub Zen-0.4.0.AppImage
 ```
 
 The script checks the `.minisig` next to the file and prints
@@ -104,13 +104,13 @@ fails loudly.
 Manual equivalent:
 
 ```bash
-minisign -V -p docs/keys/zencode-release.pub -m ZenCode-0.4.0.AppImage
+minisign -V -p docs/keys/zen-release.pub -m Zen-0.4.0.AppImage
 ```
 
 ## Updater integration
 
 - `desktop/src-tauri/tauri.conf.json` → `plugins.updater`:
-  - `pubkey`: base64 of the whole `docs/keys/zencode-release.pub` file
+  - `pubkey`: base64 of the whole `docs/keys/zen-release.pub` file
     (Tauri format; a bare `RW...` line is NOT accepted).
   - `endpoints`: release metadata URLs. **Must point at GitLab**
     (`https://gitlab.com/7enlab/zen-desktop/-/releases/...`) while the
@@ -149,5 +149,5 @@ If the secret key is ever suspected compromised:
 | `tools/sign-release.sh` | Maintainer: sign all artifacts for a release |
 | `tools/verify-release.sh` | User/CI: verify one artifact against a public key |
 | `engine/src/release_signing.rs` | Rust verification logic + tests (test keypair only) |
-| `docs/keys/zencode-release.pub` | Release public key (minisign) |
+| `docs/keys/zen-release.pub` | Release public key (minisign) |
 | `desktop/src-tauri/tauri.conf.json` | Updater `pubkey` + `endpoints` |

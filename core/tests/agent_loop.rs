@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::path::Path;
-use zencode_core::*;
+use zen_core::*;
 
 struct Scripted {
     replies: VecDeque<Result<Reply, Error>>,

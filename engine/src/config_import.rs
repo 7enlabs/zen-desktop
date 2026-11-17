@@ -593,7 +593,7 @@ fn collect_mcp_map(ctx: &mut Ctx, competitor: Competitor, source: &Path, value: 
                             source,
                             &format!("mcp env {}.{}", name, k),
                             &format!(
-                                "MCP server '{}' declares a secret env var - paste it into ZenCode Settings yourself",
+                                "MCP server '{}' declares a secret env var - paste it into Zen Settings yourself",
                                 name
                             ),
                         );
@@ -635,7 +635,7 @@ fn collect_skill_dirs(ctx: &mut Ctx, competitor: Competitor, dir: &Path) {
             path.clone(),
             name.clone(),
             format!(
-                "skill '{}' → ~/.zencode/skills/ (UNTRUSTED until you approve it)",
+                "skill '{}' → ~/.zen/skills/ (UNTRUSTED until you approve it)",
                 name
             ),
             ctx.zhome.join("skills").join(&name),
@@ -683,7 +683,7 @@ fn collect_rule(ctx: &mut Ctx, competitor: Competitor, path: &Path, label: &str)
         ImportKind::Rule,
         path.to_path_buf(),
         label.to_string(),
-        format!("rules/memory '{}' → ~/.zencode/imported/", label),
+        format!("rules/memory '{}' → ~/.zen/imported/", label),
         ctx.zhome.join("imported").join(dest_name),
     );
 }
@@ -748,7 +748,7 @@ fn collect_codex(ctx: &mut Ctx) {
                     c,
                     &config,
                     key,
-                    "Codex config declares a secret - paste it into ZenCode Settings yourself",
+                    "Codex config declares a secret - paste it into Zen Settings yourself",
                 );
             }
         }
@@ -810,7 +810,7 @@ fn collect_codex(ctx: &mut Ctx) {
             c,
             &auth,
             "OPENAI_API_KEY (auth.json)",
-            "Codex OAuth/API key - sign in again inside ZenCode Settings; it is never copied",
+            "Codex OAuth/API key - sign in again inside Zen Settings; it is never copied",
         );
     }
 }
@@ -831,7 +831,7 @@ fn collect_cursor(ctx: &mut Ctx) {
         ));
     }
     ctx.warnings.push(
-        "Cursor: project rules live in each project's .muse/rules/ - open the project in ZenCode and import from there"
+        "Cursor: project rules live in each project's .muse/rules/ - open the project in Zen Desktop and import from there"
             .to_string(),
     );
 }
@@ -872,7 +872,7 @@ fn collect_continue_models_json(ctx: &mut Ctx, source: &Path, v: &Value) {
                         source,
                         &format!("{}.{}", name, key),
                         &format!(
-                            "Continue model '{}' declares an apiKey - paste it into ZenCode Settings yourself",
+                            "Continue model '{}' declares an apiKey - paste it into Zen Settings yourself",
                             name
                         ),
                     );
@@ -922,7 +922,7 @@ fn collect_continue_models_yaml(ctx: &mut Ctx, source: &Path) {
                         source,
                         &format!("{}.{}", name, key),
                         &format!(
-                            "Continue model '{}' declares an apiKey - paste it into ZenCode Settings yourself",
+                            "Continue model '{}' declares an apiKey - paste it into Zen Settings yourself",
                             name
                         ),
                     );
@@ -1028,7 +1028,7 @@ fn collect_aider(ctx: &mut Ctx) {
                     c,
                     &p,
                     k,
-                    "Aider config declares a secret - paste it into ZenCode Settings yourself",
+                    "Aider config declares a secret - paste it into Zen Settings yourself",
                 );
                 continue;
             }
@@ -1095,7 +1095,7 @@ fn scan_value_for_secrets(
                             source,
                             &child,
                             &format!(
-                                "{} declares a secret ('{}') - paste it into ZenCode Settings yourself",
+                                "{} declares a secret ('{}') - paste it into Zen Settings yourself",
                                 owner, child
                             ),
                         );
@@ -1132,7 +1132,7 @@ fn scan_json_for_secrets(
                             source,
                             &format!("{}.{}", where_, k),
                             &format!(
-                                "{} declares '{}' - paste it into ZenCode Settings yourself",
+                                "{} declares '{}' - paste it into Zen Settings yourself",
                                 competitor.display_name(),
                                 k
                             ),
@@ -1309,7 +1309,7 @@ pub fn apply(plan: &ImportPlan, zhome: &Path) -> Result<ImportReport> {
             fs::write(
                 &dest,
                 serde_json::to_string_pretty(&serde_json::json!({
-                    "_note": "Suggestions from competitor config import. Activate one in ZenCode Settings → Providers; paste your own API key there - keys are never imported.",
+                    "_note": "Suggestions from competitor config import. Activate one in Zen Settings → Providers; paste your own API key there - keys are never imported.",
                     "suggestions": suggestions,
                 }))
                 .expect("json! macro values always serialize"),
@@ -1409,14 +1409,14 @@ fn merge_mcp_json(dest: &Path, servers: BTreeMap<String, (Value, String)>) -> Re
     {
         let obj = root.as_object_mut().expect("root verified as object above");
         let trust_obj = obj
-            .entry("_zencode")
+            .entry("_zen")
             .or_insert_with(|| serde_json::json!({}))
             .as_object_mut()
-            .ok_or_else(|| anyhow::anyhow!("_zencode is not an object"))?
+            .ok_or_else(|| anyhow::anyhow!("_zen is not an object"))?
             .entry("trust")
             .or_insert_with(|| serde_json::json!({}))
             .as_object_mut()
-            .ok_or_else(|| anyhow::anyhow!("_zencode.trust is not an object"))?;
+            .ok_or_else(|| anyhow::anyhow!("_zen.trust is not an object"))?;
         for (name, trust_entry) in trust_entries {
             trust_obj.insert(name, trust_entry);
         }
@@ -1635,9 +1635,7 @@ mod tests {
 
         assert_eq!(plan.secrets.len(), 1, "{:?}", plan.secrets);
         assert!(plan.secrets[0].name.contains("apiKey"));
-        assert!(plan.secrets[0]
-            .hint
-            .contains("paste it into ZenCode Settings"));
+        assert!(plan.secrets[0].hint.contains("paste it into Zen Settings"));
 
         let model = plan
             .items
@@ -1830,10 +1828,7 @@ mod tests {
         let mcp_text = fs::read_to_string(zhome.join("mcp.json")).unwrap();
         let mcp: Value = serde_json::from_str(&mcp_text).unwrap();
         assert!(mcp["mcpServers"]["claude-code-gh"]["command"] == "npx");
-        assert_eq!(
-            mcp["_zencode"]["trust"]["claude-code-gh"]["trust"],
-            "untrusted"
-        );
+        assert_eq!(mcp["_zen"]["trust"]["claude-code-gh"]["trust"], "untrusted");
         assert!(
             mcp["mcpServers"]["claude-code-gh"]["env"]
                 .as_object()

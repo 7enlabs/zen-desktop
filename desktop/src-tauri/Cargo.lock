@@ -6158,11 +6158,11 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
- "zencode_engine",
+ "zen_engine",
 ]
 
 [[package]]
-name = "zencode_engine"
+name = "zen_engine"
 version = "0.3.0-dev"
 dependencies = [
  "anyhow",

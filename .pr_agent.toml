@@ -1,4 +1,4 @@
-# PR Agent config for ZenCode Desktop (Route A: free-model PR review).
+# PR Agent config for Zen Desktop (Route A: free-model PR review).
 # Adopted from the verified CLI config (7enlab/zencode, PR #2).
 # Functional settings are identical to CLI; only this header changed.
 # Safety gates decided for Route A:

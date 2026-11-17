@@ -1,4 +1,4 @@
-# ZenCode Desktop - Tauri Shell (g6, engine wired)
+# Zen Desktop - Tauri Shell (g6, engine wired)
 
 Minimal Tauri 2 application shell with the engine connected via Tauri
 commands (`run_task`, `list_sessions`, `get_log_since`) and event streaming
@@ -14,7 +14,7 @@ desktop/
 │   ├── demo.ndjson           # demo conversation for standalone viewing
 │   └── styles.css            # dark theme
 ├── src-tauri/
-│   ├── Cargo.toml            # tauri 2 + 15 plugins + zencode_engine (path)
+│   ├── Cargo.toml            # tauri 2 + 15 plugins + zen_engine (path)
 │   ├── build.rs
 │   ├── tauri.conf.json       # window, bundle, updater + deep-link config
 │   ├── capabilities/
@@ -56,7 +56,7 @@ registers the **union (15)** - Z App may trim:
 | log | frontend + backend logs to disk |
 | window-state | remember window size/position |
 | single-instance | focus existing window on second launch |
-| deep-link | `zencode://` URLs |
+| deep-link | `zen://` URLs |
 | autostart | launch at login (opt-in, D11) |
 | os | platform/arch info |
 | clipboard-manager | clipboard read/write |
@@ -65,7 +65,7 @@ registers the **union (15)** - Z App may trim:
 > **Note:** `tauri-plugin-deep-link` (D3 day-one) is excluded from this
 > scaffold: deep-link 2.6.2 (latest 2.x) does not compile - it requires
 > `rust-ini 0.21` but constructs `ini::ParseOption` without the fields added
-> in 0.21 (E0063). The `zencode://` scheme stays declared in
+> in 0.21 (E0063). The `zen://` scheme stays declared in
 > `tauri.conf.json`; re-add the plugin when upstream ships a fixed 2.x.
 
 ## Before the first public release (D3 checklist)
@@ -82,7 +82,7 @@ registers the **union (15)** - Z App may trim:
 
 ## What's next (engine wiring)
 
-1. Add `zencode_engine` as a dependency (path or git) and expose Tauri
+1. Add `zen_engine` as a dependency (path or git) and expose Tauri
    commands (`run_task`, `cancel`, session list/search) per the D2 IPC design.
 2. Stream `DesktopEvent`s to the frontend via `tauri::ipc::Channel`
    (D1 `StreamEmitter` design) with rAF batching.

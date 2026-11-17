@@ -25,7 +25,7 @@ Severity: 🔴 Critical · 🟠 Major · 🟡 Minor. "Sweep fix" = what this bra
   fix). **Decision needed:** is LAN-without-TLS an accepted product posture,
   or must LAN mode require the device-credential + TLS?
 - [ ] **B3** 🟠 Cloud deploy docs show `0.0.0.0` with no TLS and no bind
-  assertion. Sweep fix: `serve()` now requires `ZENCODE_CLOUD_PUBLIC=1` to bind
+  assertion. Sweep fix: `serve()` now requires `ZEN_CLOUD_PUBLIC=1` to bind
   non-loopback. **Decision needed:** bless a TLS story (reverse-proxy guide?
   built-in ACME?) and update the docs.
 - [ ] **B6** 🟡 Telegram pairing from group chats: a pairing code posted in a
@@ -82,7 +82,7 @@ Severity: 🔴 Critical · 🟠 Major · 🟡 Minor. "Sweep fix" = what this bra
 ## Automations & goal mode
 
 - [ ] **D23** 🟠 Automation spec trust is undefined: specs live in
-  `~/.zencode/automations.json`, editable by any process as the user. A
+  `~/.zen/automations.json`, editable by any process as the user. A
   malicious spec = scheduled prompt injection. **Decision needed:** sign specs,
   or at minimum show a diff/approval when a spec file changes out-of-band.
 - [ ] **D24** 🟠 `BudgetGuard` is cooperative and currently unwired in places;

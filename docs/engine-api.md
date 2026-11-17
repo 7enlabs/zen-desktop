@@ -1,11 +1,11 @@
-# Engine API guide (`zencode_engine`)
+# Engine API guide (`zen_engine`)
 
 > Verified against `origin/main` on GitLab. Field and function names are taken
 > from the actual source.
 
 ## Overview
 
-The `engine/` crate is a thin assembly layer: it wires the ZenCode CLI's agent loop
+The `engine/` crate is a thin assembly layer: it wires the Zen CLI's agent loop
 (`zen-agent`), file/shell tools (`zen-tools`), and core types (`zen-core`) - all pulled
 as git dependencies pinned to one CLI rev - against any OpenAI-compatible endpoint.
 No agent core is rewritten here; the crate only assembles the pieces.
@@ -19,7 +19,7 @@ engine/
   src/prompt_budget.rs  g4 token budget: chars/4 estimate + fail-fast guard
   src/hooks.rs          PreToolUseHook trait + ordered HookChain
   src/read_tracking.rs  P3 read-before-write defense-in-depth
-  src/bin/zencode.rs    `zencode run` / `zencode eval` CLI
+  src/bin/zen-desktop.rs    `zen-desktop run` / `zen-desktop eval` CLI
   tests/fake_llm.rs            Integration tests against a scripted localhost LLM
   tests/snapshots/             insta contract snapshot for the event stream
 ```
@@ -31,7 +31,7 @@ Git dependencies (`engine/Cargo.toml`): `zen-core`, `zen-agent`, `zen-tools` fro
 
 ```rust
 use std::sync::Arc;
-use zencode_engine::{events::RecordingSink, run_task_with_sink, RunOptions, scope::ScopeDecl};
+use zen_engine::{events::RecordingSink, run_task_with_sink, RunOptions, scope::ScopeDecl};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -71,7 +71,7 @@ Notes: `run_task` needs no key for keyless free tiers (`api_key: None`); pass
 | `fallback_models` | `Vec<String>` | `vec![]` |
 | `cwd` | `PathBuf` | required - must be an existing directory |
 | `max_turns` | `usize` | `12` |
-| `system_prompt` | `String` | `"You are ZenCode, a concise coding agent. …"` |
+| `system_prompt` | `String` | `"You are Zen CLI, a concise coding agent. …"` |
 | `dangerous_allow_all` (deprecated) | `bool` | `false` - deny all tool calls unless `true` |
 | `scope` (R3) | `Option<ScopeDecl>` | `None` - declare dirs the agent may touch |
 | `pre_tool_use_hooks` | `Vec<Arc<dyn PreToolUseHook>>` | `vec![]` |
@@ -118,7 +118,7 @@ meaning changes incompatibly.
 definitions) under a token budget, using the chars/4 estimate.
 
 ```rust
-use zencode_engine::prompt_budget::{ensure_within_budget, PROMPT_BUDGET_TOKENS};
+use zen_engine::prompt_budget::{ensure_within_budget, PROMPT_BUDGET_TOKENS};
 
 // ~1200 token budget (chars/4 heuristic); fail fast before the run starts.
 let used = ensure_within_budget(&opts.system_prompt, &tools)?; // Err(OverBudget) if > budget
@@ -134,7 +134,7 @@ wrapped so every call first passes through your hooks.
 
 ```rust
 use std::sync::Arc;
-use zencode_engine::hooks::{HookChain, PreToolUseHook, PreToolUseDecision};
+use zen_engine::hooks::{HookChain, PreToolUseHook, PreToolUseDecision};
 // impl PreToolUseHook for MyPolicy { async fn before_tool_call(...) -> ... }
 let mut chain = HookChain::new();
 chain.push(Arc::new(MyPolicy));
@@ -151,8 +151,8 @@ rate-limit policy itself is intentionally not here - it awaits atzenn/zencode#10
 layer, mirroring the CLI's `ToolContext.read_files` semantics.
 
 ```rust
-use zencode_engine::read_tracking::ReadTracker;
-let (tools, tracker) = zencode_engine::default_tracked_tools();
+use zen_engine::read_tracking::ReadTracker;
+let (tools, tracker) = zen_engine::default_tracked_tools();
 // tracker.was_read(&cwd, "src/main.rs") -> bool
 ```
 
@@ -162,17 +162,17 @@ canonicalized paths), `TrackingReadTool::{new, tracker}` (wraps Read), `ReadGuar
 (Write to a *new* file is allowed), `tracked_tools() -> (ToolRegistry, ReadTracker)`,
 `NOT_READ_MSG`.
 
-## `zencode` CLI (engine/src/bin/zencode.rs)
+## `zen-desktop` CLI (engine/src/bin/zen-desktop.rs)
 
 ```bash
-zencode run "Create hello.txt with: hi" [--model M] [--cwd DIR] [--max-turns N] [--session-dir DIR]
-zencode eval [--model M] [--max-turns N]
+zen-desktop run "Create hello.txt with: hi" [--model M] [--cwd DIR] [--max-turns N] [--session-dir DIR]
+zen-desktop eval [--model M] [--max-turns N]
 ```
 
 `run` executes against a `:free` model only (non-`:free` models are refused) and saves
-the session NDJSON to `<cwd>/.zencode/sessions/session-<ts>.jsonl`. `eval` runs 10
-small file tasks and prints a metrics table. Env overrides: `ZENCODE_BASE_URL`,
-`ZENCODE_API_KEY`, `ZENCODE_MODEL`.
+the session NDJSON to `<cwd>/.zen/sessions/session-<ts>.jsonl`. `eval` runs 10
+small file tasks and prints a metrics table. Env overrides: `ZEN_BASE_URL`,
+`ZEN_API_KEY`, `ZEN_MODEL`.
 
 ## Validation & safety
 

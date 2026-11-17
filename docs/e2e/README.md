@@ -8,7 +8,7 @@ scrubbed of anything sensitive.
 
 - **NEVER** include: API keys, bearer tokens, session tokens, cookies.
 - **NEVER** include personal filesystem paths - use `<REDACTED>` (e.g.
-  `<REDACTED>/.zencode/sessions/...`).
+  `<REDACTED>/.zen/sessions/...`).
 - Allowed: model names, token counts, turn counts, durations, costs,
   task prompts, pass/fail outcomes.
 

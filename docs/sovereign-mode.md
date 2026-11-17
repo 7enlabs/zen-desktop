@@ -9,7 +9,7 @@
 ```bash
 ollama serve            # start local Ollama (once)
 ollama pull qwen2.5-coder:14b   # fetch a coding model (once, then offline)
-# In ZenCode Desktop: toggle "Sovereign Mode" ON.
+# In Zen Desktop: toggle "Sovereign Mode" ON.
 # Disabling downloads the session attestation (compliance receipt).
 ```
 

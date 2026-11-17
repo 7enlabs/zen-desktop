@@ -6,7 +6,7 @@ with a **hard stop**. Part of the v0.4.0 "Trust" roadmap.
 ## Why
 
 The community's unanimous advice for runaway agents is "set hard spend
-limits". Every model ZenCode uses is `:free`, so a budget here is not about
+limits". Every model Zen uses is `:free`, so a budget here is not about
 money - it stretches free-tier quotas and kills runaway loops (20–40
 iteration death spirals that leave the workspace worse) before they burn
 turns.
@@ -17,7 +17,7 @@ Set `RunOptions.budget` to `Some(TaskBudget { .. })` before `run_task`:
 
 ```rust
 let mut opts = RunOptions::new(base_url, model, cwd);
-opts.budget = Some(zencode_engine::budget::TaskBudget {
+opts.budget = Some(zen_engine::budget::TaskBudget {
     max_output_tokens: 50_000,
     ..Default::default()
 });

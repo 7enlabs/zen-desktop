@@ -1,4 +1,4 @@
-# SPEC - ZenCode Desktop: Rust rebuild pilot (cowsay@1.6.0 parity)
+# SPEC - Zen Desktop: Rust rebuild pilot (cowsay@1.6.0 parity)
 ## Hard rules
 - Rust stable, std only (no crates). Binary `cowsay`. Linux, macOS, Windows (x86_64 + aarch64).
 - Output must byte-match spec/cases/*.out for all 11 cases. Always write "\n" (never \r\n) to stdout, including on Windows; read stdin as UTF-8 bytes, accept \r\n.

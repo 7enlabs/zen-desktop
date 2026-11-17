@@ -119,7 +119,7 @@ release-linux:
     - cargo install tauri-cli --version "^2" --locked
   script:
     - tools/release-linux.sh "$CI_COMMIT_TAG" dist/
-    - PKG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/zencode-desktop/${CI_COMMIT_TAG}"
+    - PKG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/zen-desktop/${CI_COMMIT_TAG}"
     - 'for f in dist/*; do curl --fail --silent --show-error --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$f" "$PKG/$(basename "$f")"; echo; done'
   artifacts:
     paths:
@@ -138,10 +138,10 @@ release-publish:
     - echo "Publishing $CI_COMMIT_TAG"
   release:
     tag_name: $CI_COMMIT_TAG
-    name: "ZenCode Desktop $CI_COMMIT_TAG"
+    name: "Zen Desktop $CI_COMMIT_TAG"
     description: "See CHANGELOG.md. Updater manifest: latest.json (signed-version checked)."
     assets:
       links:
         - name: latest.json
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/zencode-desktop/${CI_COMMIT_TAG}/latest.json"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/zen-desktop/${CI_COMMIT_TAG}/latest.json"
           direct_asset_path: /latest.json

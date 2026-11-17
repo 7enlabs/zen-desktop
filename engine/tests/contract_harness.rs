@@ -6,7 +6,7 @@
 //!
 //! Tier 2 (pinning the real parser) is fully specified in
 //! `docs/dv4-contract-harness-design.md` and could only be activated after PR #3
-//! (DV-2) merged: at that point `zencode_engine::stream_json::{parse_stream_json,
+//! (DV-2) merged: at that point `zen_engine::stream_json::{parse_stream_json,
 //! to_desktop_events, interpret_exit_code}` would exist and the following tier-2 asserts
 //! would be added verbatim, without changing tier-1 asserts:
 //!   - unknown type -> `DesktopEvent::Unknown`, not dropped (fixture 09);
@@ -509,13 +509,13 @@ fn fixture_inventory_report() {
 }
 
 // Tier 2 (DV-4): pin the REAL parser against the same fixtures.
-// Added after PR #3 merged (main 4b71b23): zencode_engine::stream_json
+// Added after PR #3 merged (main 4b71b23): zen_engine::stream_json
 // now exists on main. Tier-1 tests above are untouched; tier 2 only adds
 // assertions that call the parser. Invariant: never edit the parser to
 // force green; a failing tier-2 assert is reported as a finding.
 
-use zencode_engine::events::DesktopEvent;
-use zencode_engine::stream_json::{
+use zen_engine::events::DesktopEvent;
+use zen_engine::stream_json::{
     interpret_exit_code, parse_stream_json, to_desktop_events, CliExit, CliLine, CliStreamEvent,
 };
 

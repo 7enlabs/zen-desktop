@@ -4,7 +4,7 @@ pub const FREE_ALLOWLIST: &[&str] = &["deepseek-v4.1-flash-uncensored"];
 
 pub const FREE_SUFFIX: &str = ":free";
 
-pub const BLOCKED_MESSAGE: &str = "ZenCode cannot bill you - this is structural, not a setting.";
+pub const BLOCKED_MESSAGE: &str = "Zen cannot bill you - this is structural, not a setting.";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CostFirewallError {
@@ -18,11 +18,11 @@ impl fmt::Display for CostFirewallError {
         match self {
             CostFirewallError::NonFreeModelBlocked { model } => write!(
                 f,
-                "ZenCode blocked model '{model}': only :free models are allowed. {BLOCKED_MESSAGE}"
+                "Zen blocked model '{model}': only :free models are allowed. {BLOCKED_MESSAGE}"
             ),
             CostFirewallError::EmptyModelId => write!(
                 f,
-                "ZenCode blocked the request: no model id was provided. Only :free models are allowed. {BLOCKED_MESSAGE}"
+                "Zen blocked the request: no model id was provided. Only :free models are allowed. {BLOCKED_MESSAGE}"
             ),
         }
     }
@@ -122,7 +122,7 @@ impl SpendMeter {
 
     pub fn summary(&self) -> String {
         format!(
-            "Spent $0.00 across {} task(s). ZenCode cannot bill you.",
+            "Spent $0.00 across {} task(s). Zen cannot bill you.",
             self.tasks_run
         )
     }

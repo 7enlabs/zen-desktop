@@ -1,15 +1,15 @@
-# ZenCode Desktop - architecture & build order (agreed 2026-10-17)
+# Zen Desktop - architecture & build order (agreed 2026-10-17)
 
-> Canonical plan: the "PLAN-v0.3" page on the shared Notion space ZenCode-Hub (summarised in the last section). Where sections differ, the last section wins.
+> Canonical plan: the "PLAN-v0.3" page on the shared Notion space Zen Hub (summarised in the last section). Where sections differ, the last section wins.
 
 ## 1. App foundation
-- Tauri 2 shell calling the `zen-agent` / `zen-core` crates. Official plugins: updater, shell, fs, dialog, store, log, window-state, single-instance, deep-link (`zencode://`).
+- Tauri 2 shell calling the `zen-agent` / `zen-core` crates. Official plugins: updater, shell, fs, dialog, store, log, window-state, single-instance, deep-link (`zen://`).
 - Pure-Rust alternatives if we drop the webview: GPUI (Zed), Iced, egui.
 
-## 2. Connecting to ZenCode CLI (github.com/atzenn/zencode)
+## 2. Connecting to Zen CLI (github.com/atzenn/zencode)
 - Either crates via a pinned git dependency, or run `zen` headless with `--output-format stream-json`.
 - One versioned schema file for stream-json and the session event log, with contract tests (CLI repo is read-only for us: contract tests live in Desktop).
-- ACP (Zed's Agent Client Protocol): Desktop can host ZenCode and other agents; ZenCode can plug into Zed.
+- ACP (Zed's Agent Client Protocol): Desktop can host Zen CLI and other agents; Zen CLI can plug into Zed.
 - MCP: reuse `zen-mcp`, add an MCP server manager screen.
 
 ## 3. UI components
@@ -35,13 +35,13 @@
 - obra/superpowers, context7: TDD/plan workflow, current Tauri docs.
 - Coding rules → repo `AGENTS.md`.
 - Team code review and REA + oracle prompts for PR review and CLI parity tests.
-- Copy `REVIEW.md` + PR template from zencode.
+- Copy `REVIEW.md` + PR template from Zen CLI.
 
-## 7. Alignment with ZenCode-Hub (read 2026-10-17) - takes precedence
+## 7. Alignment with Zen Hub (read 2026-10-17) - takes precedence
 - PLAN-v0.3 steps:
   0. Freeze `core/` (tag `core-pilot-v0`, README marks it experimental).
-  1. CLI bridge: run `zen -p --output-format stream-json` (zencode release binary, pinned version), parse events line by line. Proof: fake process printing sample stream-json → parser yields the right events; wrong binary version → clear error.
-  2. Schema contract: stream-json + event log (`"v":1`) fixtures from zencode in `tests/fixtures/`; changing one field turns the test red; CI green on real fixtures.
+  1. CLI bridge: run `zen -p --output-format stream-json` (zen release binary, pinned version), parse events line by line. Proof: fake process printing sample stream-json → parser yields the right events; wrong binary version → clear error.
+  2. Schema contract: stream-json + event log (`"v":1`) fixtures from Zen CLI in `tests/fixtures/`; changing one field turns the test red; CI green on real fixtures.
   3. Tauri 2 shell (`app/`): single-session chat, streaming text + tool calls; plugins log/store/window-state/single-instance; tauri-driver e2e with a mock model + break-it checks.
   4. Resume/fork (`zen --resume`); show tool results marked "interrupted".
   5. Per-hunk diff view (`similar`); rejecting a hunk leaves the file unchanged.
@@ -50,7 +50,7 @@
 - v0.3.0 milestone: steps 1–5 done and one real `:free` model completes a file-editing session through Desktop. Later (v0.4–0.5): ACP, MCP manager, auto-update, tree-sitter repo map, fail-closed sandbox, code signing.
 - `engine/` (crate dependency) stays as a secondary path/test harness; the main path is the stream-json bridge.
 - CLI bugs/missing features: open an issue on atzenn/zencode labelled `desktop` (no temporary patches in Desktop); also log in `docs/upstream-proposals.md`.
-- Notion: never edit CLI-team pages. Add new subpages under ZenCode-Hub titled "Desktop - …"; the CLI team reads them nightly at 21:30.
+- Notion: never edit CLI-team pages. Add new subpages under Zen Hub titled "Desktop - …"; the CLI team reads them nightly at 21:30.
 - Repo language: everything committed to GitHub is in English.
 
 ## 8. Review 2026-10-17 - action items (DO FIRST, before new features)

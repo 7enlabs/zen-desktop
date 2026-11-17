@@ -13,8 +13,8 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use zencode_engine::scope::ScopeDecl;
-use zencode_engine::RunOptions;
+use zen_engine::scope::ScopeDecl;
+use zen_engine::RunOptions;
 
 /// Sequence number making each temp script name unique within a process.
 static WRITE_SEQ: AtomicU64 = AtomicU64::new(0);

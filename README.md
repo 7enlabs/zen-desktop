@@ -1,16 +1,16 @@
-# ZenCode Desktop
+# Zen Desktop
 
 The AI coding agent that cannot bill you - structurally free-only. A Tauri 2 desktop app
-built on the [ZenCode CLI](https://gitlab.com/atzenn/zencode) agent core via git dependencies.
+built on the [Zen CLI](https://gitlab.com/atzenn/zencode) agent core via git dependencies.
 
 ## Architecture
 
-- **`engine/`** - crate `zencode_engine`: thin assembly layer over CLI crates (`zen-agent`,
+- **`engine/`** - crate `zen_engine`: thin assembly layer over CLI crates (`zen-agent`,
   `zen-tools`, `zen-core` from `gitlab.com/atzenn/zencode` at a pinned rev). Owns the
-  Trust stack, the versioned event schema (`DesktopEvent`), and `run_task()` / `zencode run`.
+  Trust stack, the versioned event schema (`DesktopEvent`), and `run_task()` / `zen-desktop run`.
 - **`desktop/`** - Tauri 2 app (Rust backend + web UI): session control room, model picker,
   onboarding, network log, scope/approval UI.
-- **`core/`** - frozen pilot crate (`zencode_core`); kept for reference, do not extend.
+- **`core/`** - frozen pilot crate (`zen_core`); kept for reference, do not extend.
 - **`rebuild/`** - cowsay pilot (byte-for-byte rebuild); kept for reference.
 
 ## Trust stack (merged on main)
@@ -44,7 +44,7 @@ off) runs on PR opened, reopened, and ready for review only.
 
 ## Roadmap
 
-The authoritative roadmap is **ZenCode Desktop - Roadmap FINAL** (Notion, ZenCode-Hub,
+The authoritative roadmap is **Zen Desktop - Roadmap FINAL** (Notion, Zen Hub,
 written by Z App, 2026-10-18). Milestones: v0.3.0 "Foundation + Trust" → v0.4.0
 "Stream, Freedom & Hardening" → v0.5.0 "Control Room & Proof" → v1.0.0 "Stable & Open".
 

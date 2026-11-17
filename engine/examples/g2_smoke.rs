@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use zencode_engine::cli_spawn::{run_cli_task, CliRunHandle};
-use zencode_engine::events::RecordingSink;
-use zencode_engine::RunOptions;
+use zen_engine::cli_spawn::{run_cli_task, CliRunHandle};
+use zen_engine::events::RecordingSink;
+use zen_engine::RunOptions;
 
 const BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
 const MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let dir = std::env::temp_dir().join("zencode-g2-smoke");
+    let dir = std::env::temp_dir().join("zen-g2-smoke");
     if dir.exists() {
         std::fs::remove_dir_all(&dir)?;
     }
@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
     opts.dangerous_allow_all = true;
 
     let sink = Arc::new(RecordingSink::new());
-    let task = "Create a file named hello.txt in the working directory containing exactly this text on one line: hello zencode";
+    let task = "Create a file named hello.txt in the working directory containing exactly this text on one line: hello zen";
     println!("task: {task}");
 
     let handle = CliRunHandle::new();
@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
 
     let content = std::fs::read_to_string(dir.join("hello.txt"))?;
     println!("hello.txt: {content:?}");
-    assert_eq!(content.trim(), "hello zencode", "file content mismatch");
+    assert_eq!(content.trim(), "hello zen", "file content mismatch");
 
     let events = sink.events();
     println!("events recorded: {}", events.len());

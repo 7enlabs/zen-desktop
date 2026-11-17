@@ -32,17 +32,17 @@ Status transitions:
 
 ```rust
 use std::sync::Arc;
-use zencode_engine::claims::{ClaimKind, ClaimRegistry, ClaimingSink, Evidence};
+use zen_engine::claims::{ClaimKind, ClaimRegistry, ClaimingSink, Evidence};
 
 // 1. Wrap your sink: assistant assertions become claims automatically.
 let registry = Arc::new(ClaimRegistry::new());
 let sink = Arc::new(ClaimingSink::new(inner_sink, registry.clone()));
 
 // 2. Run as usual.
-let result = zencode_engine::run_task_with_sink(&opts, task, sink).await?;
+let result = zen_engine::run_task_with_sink(&opts, task, sink).await?;
 // ... or use the convenience wrapper:
 let (result, registry) =
-    zencode_engine::run_task_with_claims(&opts, task, inner_sink).await?;
+    zen_engine::run_task_with_claims(&opts, task, inner_sink).await?;
 
 // 3a. Heuristic evidence is attached automatically for Bash test/build
 //     tool results (see `outcome_from_output`).

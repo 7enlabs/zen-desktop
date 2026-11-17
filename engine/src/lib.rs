@@ -81,7 +81,7 @@ impl RunOptions {
             fallback_models: vec![],
             cwd: cwd.into(),
             max_turns: 12,
-            system_prompt: "You are ZenCode, a concise coding agent. Use the tools to complete the task, then reply with a short summary.".into(),
+            system_prompt: "You are Zen CLI, a concise coding agent. Use the tools to complete the task, then reply with a short summary.".into(),
             budget: None,
             scope: None,
             dangerous_allow_all: false,

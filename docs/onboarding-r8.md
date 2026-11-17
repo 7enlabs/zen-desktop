@@ -1,6 +1,6 @@
 # R8 - 60-Second Onboarding
 
-**Goal:** a first-time user opens ZenCode Desktop and runs their first task
+**Goal:** a first-time user opens Zen Desktop and runs their first task
 with a free model within 60 seconds.
 
 ## Flow
@@ -20,8 +20,8 @@ Any step → SKIPPED (user can bail out anytime)
    - Google AI Ultra / Antigravity → **HIGH** (mass 403 bans)
    - OpenAI SIWC → **LOW** (official program)
    - The raw key is never stored - only an opaque key reference.
-4. **Demo task** - one-click run of `"Explain in one sentence what ZenCode
-   Desktop is."` against the chosen model.
+4. **Demo task** - one-click run of `"Explain in one sentence what Zen Desktop
+   is."` against the chosen model.
 
 ## Files
 
@@ -32,7 +32,7 @@ Any step → SKIPPED (user can bail out anytime)
 
 ## Persistence
 
-`localStorage["zencode.onboarding.v1"] = { completed, skipped, modelId, at, v }`.
+`localStorage["zen.onboarding.v1"] = { completed, skipped, modelId, at, v }`.
 Onboarding shows only when no record exists. Corrupt JSON → treated as no record.
 
 ## Testing

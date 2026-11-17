@@ -1,7 +1,7 @@
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PUB_FILE="$ROOT/docs/keys/zencode-release.pub"
+PUB_FILE="$ROOT/docs/keys/zen-release.pub"
 CONF="$ROOT/desktop/src-tauri/tauri.conf.json"
 
 [ -f "$PUB_FILE" ] || { echo "FAIL: missing $PUB_FILE"; exit 1; }
@@ -29,10 +29,10 @@ esac
 
 if [ "$actual" = "$expected" ]; then
   keyid="$(printf '%s' "$actual" | head -n 1 | sed 's/.*key //')"
-  echo "OK: tauri.conf.json updater pubkey matches docs/keys/zencode-release.pub ($keyid)"
+  echo "OK: tauri.conf.json updater pubkey matches docs/keys/zen-release.pub ($keyid)"
 else
   echo "FAIL: updater pubkey in $CONF does not match $PUB_FILE"
   echo "  tauri.conf.json decodes to: $(printf '%s' "$actual" | head -n 1)"
-  echo "  docs/keys/zencode-release.pub: $(printf '%s' "$expected" | head -n 1)"
+  echo "  docs/keys/zen-release.pub: $(printf '%s' "$expected" | head -n 1)"
   exit 1
 fi

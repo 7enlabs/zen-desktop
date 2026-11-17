@@ -1,4 +1,4 @@
-//! Spawn the ZenCode CLI as a subprocess and stream its `stream-json` output.
+//! Spawn the Zen CLI as a subprocess and stream its `stream-json` output.
 //!
 //! This module is the Desktop's only run path (DV-3 rewire). A run is
 //! `zen -p --output-format stream-json <prompt>` as a child process; stdout
@@ -52,7 +52,7 @@ use crate::stream_json::{
 use crate::{telemetry, RunOptions};
 
 /// Where to get the CLI when it is not on PATH (CLI README, `## Install`).
-pub const INSTALL_HINT: &str = "install the ZenCode CLI: https://github.com/7enlab/zencode#install";
+pub const INSTALL_HINT: &str = "install the Zen CLI: https://github.com/7enlab/zencode#install";
 
 /// Keep only the tail of stderr (error detail on exit 1, never a full dump).
 const STDERR_TAIL_CAP: usize = 32 * 1024;
@@ -964,7 +964,7 @@ mod tests {
 
     #[test]
     fn resolve_finds_zen_on_path() {
-        let dir = std::env::temp_dir().join("zencode-resolve-test");
+        let dir = std::env::temp_dir().join("zen-resolve-test");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let fake = dir.join("zen");
@@ -1089,7 +1089,7 @@ mod tests {
     #[tokio::test]
     #[cfg(unix)]
     async fn spawn_retries_when_binary_is_busy() {
-        let dir = std::env::temp_dir().join("zencode-spawn-retry-test");
+        let dir = std::env::temp_dir().join("zen-spawn-retry-test");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let script = dir.join("zen");
@@ -1128,7 +1128,7 @@ mod tests {
     /// backoff: a missing binary returns in milliseconds.
     #[tokio::test]
     async fn spawn_does_not_retry_other_errors() {
-        let missing = std::env::temp_dir().join("zencode-no-such-binary-xyz");
+        let missing = std::env::temp_dir().join("zen-no-such-binary-xyz");
         let started = std::time::Instant::now();
         let err = spawn_child(&missing, || std::process::Command::new(&missing))
             .await

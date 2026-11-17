@@ -79,7 +79,7 @@ export function notifySessionEnd(envelope) {
   return invokeOrToast(
     "cmd_notify_session_end",
     { sessionId, summary, success },
-    success ? "ZenCode - task finished" : "ZenCode - task failed",
+    success ? "Zen - task finished" : "Zen - task failed",
     `${summary} (${sessionId})`,
     success ? "info" : "failed",
   );
@@ -89,7 +89,7 @@ export function notifyApprovalNeeded(toolName, sessionId) {
   return invokeOrToast(
     "cmd_notify_approval_needed",
     { toolName, sessionId },
-    "ZenCode - approval needed",
+    "Zen - approval needed",
     `Agent is waiting for approval: ${toolName}`,
     "approval",
   );
@@ -122,10 +122,10 @@ export function routeEvent(envelope, opts = {}) {
 
 export function demoNotifications() {
   const sessionId = "demo-" + Math.floor(Math.random() * 1000);
-  showToast("ZenCode - task finished", `Refactored auth.ts (12 files changed) (${sessionId})`, "info");
+  showToast("Zen - task finished", `Refactored auth.ts (12 files changed) (${sessionId})`, "info");
   setTimeout(() => {
     showToast(
-      "ZenCode - approval needed",
+      "Zen - approval needed",
       "Agent is waiting for approval: Bash (rm -rf)",
       "approval",
     );

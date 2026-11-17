@@ -1,9 +1,9 @@
 [package]
-name = "zencode_engine"
+name = "zen_engine"
 version = "0.3.0-dev"
 edition = "2021"
 license = "MIT"
-description = "ZenCode Desktop engine: runs the ZenCode CLI as a subprocess (zen -p --output-format stream-json) and observes its event stream"
+description = "Zen Desktop engine: runs the Zen CLI as a subprocess (zen -p --output-format stream-json) and observes its event stream"
 
 [dependencies]
 anyhow = "1"

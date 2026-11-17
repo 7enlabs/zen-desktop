@@ -53,7 +53,7 @@ function networkVerdict() {
   const hosts = [...new Set(NW.entries.map(e => e.host))];
   if (hosts.length === 0) return "No outbound requests recorded yet.";
 
-  return `Clean: ${NW.entries.length} request(s) to ${hosts.length} host(s) (${hosts.join(", ")}), none owned by ZenCode. No telemetry was sent.`;
+  return `Clean: ${NW.entries.length} request(s) to ${hosts.length} host(s) (${hosts.join(", ")}), none owned by Zen. No telemetry was sent.`;
 }
 
 function fmtBytes(n) {
@@ -115,7 +115,7 @@ function renderNetwork() {
 
   const note = document.createElement("p");
   note.className = "net-note";
-  note.textContent = "Auditable proof: this log is the complete record of engine-initiated network traffic. ZenCode operates no telemetry servers - there is nothing to phone home to.";
+  note.textContent = "Auditable proof: this log is the complete record of engine-initiated network traffic. Zen operates no telemetry servers - there is nothing to phone home to.";
   panel.appendChild(note);
 }
 
@@ -157,7 +157,7 @@ async function downloadJson(filename, obj) {
 }
 
 async function exportNetworkLog() {
-  downloadJson("zencode-network-log.json", {
+  downloadJson("zen-network-log.json", {
     exported_at: new Date().toISOString(),
     verdict: networkVerdict(),
     entries: NW.entries,

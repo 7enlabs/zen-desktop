@@ -19,7 +19,7 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TAURI_CONF="$REPO_ROOT/desktop/src-tauri/tauri.conf.json"
-RELEASE_PUB="$REPO_ROOT/docs/keys/zencode-release.pub"
+RELEASE_PUB="$REPO_ROOT/docs/keys/zen-release.pub"
 if [ ! -f "$TAURI_CONF" ] || [ ! -f "$RELEASE_PUB" ]; then
   echo "ERROR: missing $TAURI_CONF or $RELEASE_PUB" >&2
   exit 1

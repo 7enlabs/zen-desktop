@@ -1,4 +1,4 @@
-//! Parser for the ZenCode CLI's `stream-json` v1 output.
+//! Parser for the Zen CLI's `stream-json` v1 output.
 //!
 //! The Desktop spawns the CLI as a subprocess
 //! (`zen -p --output-format stream-json`) and consumes its stdout as

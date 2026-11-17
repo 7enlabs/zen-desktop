@@ -1,4 +1,4 @@
-# Upstream proposals for ZenCode CLI (atzenn/zencode)
+# Upstream proposals for Zen CLI (atzenn/zencode)
 
 ## Research
 
@@ -56,7 +56,7 @@ The Desktop engine consumes the CLI's crates (`zen-agent`, `zen-tools`, `zen-cor
 
 ## Desktop branches parked for the CLI team (2026-10-18 review)
 
-These `lead/*` branches on `gitlab.com/7enlab/zencode-desktop` implement agent-core behaviour.
+These `lead/*` branches on `gitlab.com/7enlabs/zen-desktop` implement agent-core behaviour.
 They are **not** merged into Desktop. Each line is a pointer for the CLI team (`gitlab.com/atzenn/zencode`):
 read the branch, port the idea into the CLI, then Desktop consumes it through a rev bump.
 Full verdict table: `docs/reviews/2026-10-18-lead-branches.md`.
@@ -85,4 +85,4 @@ Full verdict table: `docs/reviews/2026-10-18-lead-branches.md`.
 | `lead/user-learning` | Learning user preferences across sessions. |
 | `lead/verify-loop`, `lead-verify-loop` | Verify loop `--until` (re-run tests until green). |
 
-- **CLI: declare a license** (Z App, 2026-10-18): `zen-core`, `zen-agent`, `zen-tools` have no `license` field and the repo has no LICENSE file, so `cargo deny check licenses` flags them as unlicensed. Desktop marks them `LicenseRef-ZenCode-FirstParty` in `deny.toml` until the CLI adds `license = "..."` to its workspace `Cargo.toml`.
+- **CLI: declare a license** (Z App, 2026-10-18): `zen-core`, `zen-agent`, `zen-tools` have no `license` field and the repo has no LICENSE file, so `cargo deny check licenses` flags them as unlicensed. Desktop marks them `LicenseRef-Zen-FirstParty` in `deny.toml` until the CLI adds `license = "..."` to its workspace `Cargo.toml`.

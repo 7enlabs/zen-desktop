@@ -1,7 +1,7 @@
-# Platform Support Matrix - ZenCode Desktop
+# Platform Support Matrix - Zen Desktop
 
 **Last verified:** 2026-10-17 (engine, `main` @ `eb5d364`; sandbox PR branches as noted).
-**Policy:** ZenCode Desktop ships on Linux, macOS, and Windows. Every PR must keep
+**Policy:** Zen Desktop ships on Linux, macOS, and Windows. Every PR must keep
 all three building. See `scripts/check-cross.sh` for the local cross-compile check.
 
 ## Build status
@@ -48,7 +48,7 @@ No backend ever claims `Full` without kernel confirmation.
 - 14 of 15 day-one plugins registered. `tauri-plugin-deep-link` is
   **excluded**: v2.6.2 does not compile (requires `rust-ini` 0.21 but
   constructs `ParseOption` without the new fields - upstream bug).
-  The `zencode://` scheme stays declared in `tauri.conf.json` for re-adding later.
+  The `zen://` scheme stays declared in `tauri.conf.json` for re-adding later.
 - `tauri-plugin-autostart` uses `MacosLauncher::LaunchAgent` (correct per-OS behavior).
 - `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]` hides the
   console on Windows release builds. Correct.

@@ -11,7 +11,7 @@ use tauri::ipc::Channel;
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::menu::{MenuBuilder, MenuItem, SubmenuBuilder};
-use zencode_engine::{
+use zen_engine::{
     checkpoints::CheckpointManager,
     cli_spawn::{run_cli_task, CliRunHandle},
     events::{parse_ndjson, DesktopEventSink},
@@ -44,7 +44,7 @@ struct ForwardingSink {
 }
 
 impl DesktopEventSink for ForwardingSink {
-    fn emit_desktop(&self, ev: zencode_engine::events::DesktopEvent) {
+    fn emit_desktop(&self, ev: zen_engine::events::DesktopEvent) {
         let before = self.bridge.envelopes().len();
         self.bridge.emit_desktop(ev);
         let envs = self.bridge.envelopes();
@@ -267,7 +267,7 @@ fn signed_version_comparator(current: &str, release: tauri_plugin_updater::Remot
         eprintln!("updater: no manifest entry for {target}; ignoring update");
         return false;
     };
-    match zencode_engine::release_signing::check_update_offer(
+    match zen_engine::release_signing::check_update_offer(
         current,
         &release.version.to_string(),
         url.as_str(),
@@ -309,7 +309,7 @@ fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tau
         .text("focus-search", "Search Sessions")
         .build()?;
     let help = SubmenuBuilder::new(app, "Help")
-        .text("about", "About ZenCode Desktop")
+        .text("about", "About Zen Desktop")
         .build()?;
     MenuBuilder::new(app)
         .item(&file)

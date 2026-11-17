@@ -149,7 +149,7 @@ function applyEnvelope(env) {
     case "text_delta": {
       if (!state.assistantEl) {
         state.assistantEl = el("div", "msg assistant typing");
-        state.assistantEl.append(el("div", "role", "ZenCode"), el("div", "body"));
+        state.assistantEl.append(el("div", "role", "Zen"), el("div", "body"));
         box.append(state.assistantEl);
       }
       state.assistantEl.querySelector(".body").textContent += env.text || "";
@@ -157,7 +157,7 @@ function applyEnvelope(env) {
     }
     case "assistant_message": {
       state.assistantEl = null;
-      box.append(wrapMsg("assistant", "ZenCode", env.content || ""));
+      box.append(wrapMsg("assistant", "Zen", env.content || ""));
       // Tool-call tree cards (G3, §9 pattern 2): every call the model made,
       // with the files it touches as evidence. Data is real: tool_calls ride
       // on the assistant envelope itself.
@@ -285,7 +285,7 @@ async function liveRun(text) {
 
 function box_append_error(text) {
   const box = document.getElementById("messages");
-  box.append(wrapMsg("assistant denied", "ZenCode", "Error: " + text));
+  box.append(wrapMsg("assistant denied", "Zen", "Error: " + text));
   box.scrollTop = box.scrollHeight;
 }
 
@@ -505,7 +505,7 @@ function activeSessionObj() {
 
 function updateWindowTitle() {
   const s = activeSessionObj();
-  const title = s ? s.title + " \u2014 ZenCode Desktop" : "ZenCode Desktop";
+  const title = s ? s.title + " \u2014 Zen Desktop" : "Zen Desktop";
   document.title = title;
   try {
     const w = TAURI && window.__TAURI__ && window.__TAURI__.window;
@@ -595,7 +595,7 @@ function showAbout() {
   const overlay = document.getElementById("about-overlay");
   const body = document.getElementById("about-body");
   const s = activeSessionObj();
-  if (body) body.textContent = "ZenCode Desktop \u00b7 mode: " + state.mode + " \u00b7 session: " + (s ? s.title : "none");
+  if (body) body.textContent = "Zen Desktop \u00b7 mode: " + state.mode + " \u00b7 session: " + (s ? s.title : "none");
   if (overlay) overlay.classList.remove("hidden");
 }
 function hideAbout() {
@@ -655,7 +655,7 @@ const COMMANDS = [
   { id: "next-session", label: "Next Session", hint: "", run: () => cycleSession(1) },
   { id: "prev-session", label: "Previous Session", hint: "", run: () => cycleSession(-1) },
   { id: "copy-session-id", label: "Copy Session ID", hint: "", run: () => { if (state.activeSession) copyText(state.activeSession); } },
-  { id: "about", label: "About ZenCode Desktop", hint: "", run: showAbout },
+  { id: "about", label: "About Zen Desktop", hint: "", run: showAbout },
 ];
 
 function runCommand(id) {

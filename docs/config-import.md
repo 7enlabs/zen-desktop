@@ -1,9 +1,9 @@
 # Competitor Config Import
 
-One command to switch from another AI coding tool: ZenCode detects what's
+One command to switch from another AI coding tool: Zen CLI detects what's
 installed, shows a dry-run preview with per-item checkboxes, and imports
 your configuration. API keys are **never** copied - they're listed by name
-and source, and you paste them into ZenCode's own secure store yourself.
+and source, and you paste them into Zen CLI's own secure store yourself.
 
 ## Usage
 
@@ -36,20 +36,20 @@ macOS VS Code storage lives under
 
 | Import kind | Destination | Trust |
 |---|---|---|
-| Skill | `~/.zencode/skills/<name>/` | **UNTRUSTED** - approve before first use (Project-equivalent, PR #73) |
-| MCP server | merged into `~/.zencode/mcp.json` | **Untrusted** - every tool call asks until approved (PR #77) |
-| Command | `~/.zencode/commands/<name>.md` | n/a |
-| Rule / memory | `~/.zencode/imported/<competitor>-<file>` | n/a |
-| Model | `~/.zencode/imported-providers.json` | suggestions only - activate in Settings → Providers |
+| Skill | `~/.zen/skills/<name>/` | **UNTRUSTED** - approve before first use (Project-equivalent, PR #73) |
+| MCP server | merged into `~/.zen/mcp.json` | **Untrusted** - every tool call asks until approved (PR #77) |
+| Command | `~/.zen/commands/<name>.md` | n/a |
+| Rule / memory | `~/.zen/imported/<competitor>-<file>` | n/a |
+| Model | `~/.zen/imported-providers.json` | suggestions only - activate in Settings → Providers |
 
 Server names are namespaced (`claude-code-gh`, `cursor-sqlite`, …) so two
-tools can define a server with the same name. Existing ZenCode files are
+tools can define a server with the same name. Existing Zen files are
 never overwritten: the item is deselected in the preview and skipped at
 apply time with a note.
 
 ## Model mapping
 
-Competitor model strings are translated to ZenCode provider terms
+Competitor model strings are translated to Zen provider terms
 (seam for PR #66 `ProviderKind`):
 
 | Input | Maps to |
@@ -76,16 +76,16 @@ and value shapes (`sk-…`, `ghp_…`, `AKIA…`, long opaque strings).
 Findings are reported as `SecretFinding { name, source, hint }`; there is
 no code path that writes a detected secret anywhere - including a
 defense-in-depth strip of secret `env` vars when merging MCP JSON, and an
-end-to-end test asserting no secret-looking string lands under `~/.zencode`.
+end-to-end test asserting no secret-looking string lands under `~/.zen`.
 
 ## `/import` wiring (for `slash.rs`, PR #76)
 
 ```rust
 // In the slash-command dispatcher:
 "import" => {
-    let plan = zencode_engine::config_import::plan(&home_dir(), &zhome_dir())?;
+    let plan = zen_engine::config_import::plan(&home_dir(), &zhome_dir())?;
     // render plan.items as checkboxes + plan.secrets as a list, then:
-    let report = zencode_engine::config_import::apply(&plan, &zhome_dir())?;
+    let report = zen_engine::config_import::apply(&plan, &zhome_dir())?;
     // render report
 }
 ```
@@ -97,7 +97,7 @@ end-to-end test asserting no secret-looking string lands under `~/.zencode`.
   are read with minimal hand-rolled parsers scoped to the keys imported -
   complex configs degrade to warnings, never to wrong imports.
 - When PR #66 merges: replace `MappedProvider` with `ProviderKind`.
-- When PR #73 merges: register `~/.zencode/skills/` imports with
+- When PR #73 merges: register `~/.zen/skills/` imports with
   Project-equivalent trust (never `SkillTrust::User`).
 - When PR #77 merges: hand the merged `mcp.json` map to its config loader
-  (trust metadata is already under `_zencode.trust`).
+  (trust metadata is already under `_zen.trust`).

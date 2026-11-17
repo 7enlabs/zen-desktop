@@ -1,8 +1,8 @@
 [package]
-name = "zencode_core"
+name = "zen_core"
 version = "0.1.0"
 edition = "2021"
-description = "ZenCode Desktop agent core: std-only seams (Llm, Tool, Sandbox, SessionLog) and a minimal agent loop"
+description = "Zen Desktop agent core: std-only seams (Llm, Tool, Sandbox, SessionLog) and a minimal agent loop"
 license = "MIT"
 authors = ["7EN Labs <7enlab@gmail.com>"]
 repository = "https://github.com/7enlabs/zen-desktop"
@@ -10,5 +10,5 @@ readme = "../README.md"
 publish = false
 
 [lib]
-name = "zencode_core"
+name = "zen_core"
 path = "src/lib.rs"
