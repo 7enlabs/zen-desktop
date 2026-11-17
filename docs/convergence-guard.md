@@ -7,8 +7,8 @@
 
 Runaway token burn is the most universal complaint about coding agents:
 
-- A Cline user burned **$187 overnight** in one stuck session.
-- A Roo Code user burned **$47 in a single afternoon** from a loop.
+- A user of another agent tool burned **$187 overnight** in one stuck session.
+- Another agent-tool user burned **$47 in a single afternoon** from a loop.
 - Repair loops of 20–40 iterations "leave the workspace in a worse state"
   (re-reading files until a 40k-token task consumes 180k).
 

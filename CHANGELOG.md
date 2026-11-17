@@ -13,7 +13,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and [
 - engine: `smart_router` (R10) - pure free-only model router with fallback chain and health tracking; BYOK only as explicit opt-in.
 - engine: `telemetry` (R14) - zero-telemetry guard and auditable network log (`RunOptions.telemetry_log`); desktop Network tab (`desktop/src/network.js`).
 - engine: `sovereign` (R5) - loopback-only inference policy, preflight and hash-chained attestation log; `desktop/src/sovereign.js`; adds `sha2`.
-- engine: `config_import` - one-click import of competitor agent configs.
+- engine: `config_import` - one-click import of external agent configs.
 - desktop: R8 60-second onboarding (`desktop/src/onboarding.js`, 19 node tests).
 - docs: `RELEASE-GATE-v0.4.0.md`; CLI hand-off list of parked agent-core branches in `docs/upstream-proposals.md`.
 

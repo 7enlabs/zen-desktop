@@ -68,7 +68,7 @@ Commit `build: fetch zencode from GitLab mirror`:
 | Branch | GitHub PR | Verdict | Reason |
 |---|---|---|---|
 | `lead/acp-research` | #38 | merged | Docs/research only; merged earlier today (batch 1–2). |
-| `lead/claude-learnings` | #4 | merged | Claude Code learnings + snapshot scrub; merged earlier today. |
+| `lead/claude-learnings` | #4 | merged | Reference-agent learnings + snapshot scrub; merged earlier today. |
 | `lead/d1-stream-emitter` | #13 | merged | Docs/research only; merged earlier today (batch 1–2). |
 | `lead/d10-notifications` | #25 | merged | Docs/research only; merged earlier today (batch 1–2). |
 | `lead/d11-background-service` | #24 | merged | Docs/research only; merged earlier today (batch 1–2). |

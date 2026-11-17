@@ -4,12 +4,12 @@
 
 ## 1. App foundation
 - Tauri 2 shell calling the `zen-agent` / `zen-core` crates. Official plugins: updater, shell, fs, dialog, store, log, window-state, single-instance, deep-link (`zen://`).
-- Pure-Rust alternatives if we drop the webview: GPUI (Zed), Iced, egui.
+- Pure-Rust alternatives if we drop the webview: GPUI, Iced, egui.
 
 ## 2. Connecting to Zen CLI (github.com/atzenn/zencode)
 - Either crates via a pinned git dependency, or run `zen` headless with `--output-format stream-json`.
 - One versioned schema file for stream-json and the session event log, with contract tests (CLI repo is read-only for us: contract tests live in Desktop).
-- ACP (Zed's Agent Client Protocol): Desktop can host Zen CLI and other agents; Zen CLI can plug into Zed.
+- ACP (Agent Client Protocol): Desktop can host Zen CLI and other agents; Zen CLI can plug into external editors.
 - MCP: reuse `zen-mcp`, add an MCP server manager screen.
 
 ## 3. UI components

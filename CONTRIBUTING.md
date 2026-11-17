@@ -37,7 +37,7 @@ outlines the process and expectations.
 ## Clean-Room Rule
 
 Zen Desktop is built clean-room. Never copy code, prompts, or tool descriptions
-from Claude Code, Codex, or similar tools - even from memory of leaked sources.
+from other agent tools - even from memory of leaked sources.
 Only public binaries, SDK types, official docs, and changelogs may be used
 as references.
 

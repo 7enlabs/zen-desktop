@@ -1,7 +1,7 @@
 # ZenCode Desktop - Research / Ideas / Results (log)
 ## 2026-10-16
 ### Research
-- Competitors: Neo-cowsay (Go): word-wrap, go-runewidth, cowfiles embedded in binary, --random, colors (--rainbow/--aurora), usable as library. charasay (Rust): textwrap + unicode-width, defaults to terminal width, --think, many colored charas. ferris-says (Rust): library API say(text,width,writer). gowsay/nmyk cowsay (Go): stdlib-first, full-width.
+- Alternatives: Neo-cowsay (Go): word-wrap, go-runewidth, cowfiles embedded in binary, --random, colors (--rainbow/--aurora), usable as library. charasay (Rust): textwrap + unicode-width, defaults to terminal width, --think, many colored charas. ferris-says (Rust): library API say(text,width,writer). gowsay/nmyk cowsay (Go): stdlib-first, full-width.
 - Original npm cowsay@1.6.0: wrap is hard-cut by UTF-16 units, not by word; -l follows Node readdir order (filenames include ".cow").
 ### Ideas
 - Keep default output byte-for-byte; new features only enabled via flags.
@@ -40,7 +40,7 @@
 - CI adds a lint job: `cargo fmt --check` + `cargo clippy -D warnings` for Linux, Windows, macOS; build/test use `--locked`; commit `Cargo.lock`.
 - Module `color.rs` (std-only, with Windows FFI), flags `--cow-color`, `--color=WHEN`; 2 unit tests + 1 new integration test; golden 21/21 unchanged (default no color when piped).
 
-## 2026-10-17 - Competitor: DeepSeek Harness (dsh)
+## 2026-10-17 - DeepSeek Harness (dsh)
 
 ### Research
 - dsh: MIT open-source agent harness from DeepSeek (released 13/08/2026, developer preview, source version 0.1.5-alpha.1), TypeScript monorepo on Cordis (plugin framework). Run `npx @deepseek-ai/dsh web` (Web UI 127.0.0.1:3080), has Desktop app, `headless` profile for one-shot tasks, Python SDK via JSON-RPC over stdio.
@@ -49,8 +49,8 @@
 - Session log append-only, invariant "model-visible means logged" → resume/fork/replay/Trajectory view.
 - 4 modes: Standard, Code (`run_code`: model writes TS calling many tools at once), Minimal (shell + str_replace_editor, used for benchmark), Creator.
 - Sandbox: Linux bwrap + Landlock (C launcher fail-closed), macOS Seatbelt, Windows restricted ACL token; self-reports "partial" on old kernel.
-- Subagent can be Claude Code / Codex; MCP, skills, goals/jobs, schedule, webhook, LSP.
-- Weaknesses (ArceApps/Justin3Go): token consumption ~10x Pi on same model (4.5K vs 47.6K), bug injecting CLAUDE.md + AGENTS.md twice, plugin runs in-process (no sandbox), plugin ecosystem not stable (41 compatible / 219 need review), API changes frequently.
+- Subagent can be an external agent CLI; MCP, skills, goals/jobs, schedule, webhook, LSP.
+- Weaknesses (ArceApps/Justin3Go): token consumption ~10x a minimal agent loop on the same model (4.5K vs 47.6K), bug injecting the agent instruction files twice, plugin runs in-process (no sandbox), plugin ecosystem not stable (41 compatible / 219 need review), API changes frequently.
 
 ### Idea for ZenCode Desktop
 - "seam" architecture: split traits `Llm`, `Tool`, `Sandbox`, `SessionLog` in Rust; plugin = crate/feature or subprocess via JSON-RPC stdio (safer than dsh because plugin out-of-process).
@@ -77,7 +77,7 @@
 ## 2026-10-17 - Agent core: crate `core/` (seam traits)
 
 ### Research
-- From dsh: everything (model, tool, sandbox, session log, loop) is a plugin connected through a seam; the session log is append-only with the invariant "model-visible means logged", enabling resume/fork/replay. Pi keeps the loop minimal, using few tokens.
+- From dsh: everything (model, tool, sandbox, session log, loop) is a plugin connected through a seam; the session log is append-only with the invariant "model-visible means logged", enabling resume/fork/replay. A minimal agent loop uses few tokens.
 
 ### Idea
 - Four Rust traits instead of in-process plugins: `Llm`, `Tool`, `Sandbox`, `SessionLog`; the `run_turn` loop depends only on traits → swapping backends (fake in tests, free OpenAI-compatible channel later) does not touch the loop.
@@ -88,12 +88,12 @@
 - Crate `zencode_core` 0.1.0 std-only, 6 integration tests pass; fmt/clippy `-D warnings` clean; `rebuild/` unchanged (golden parity pass). CI runs the `rebuild` + `core` crate matrix.
 - Next step: `JsonlLog` (append-only JSONL on disk, std-only JSON encode/decode) + hash-based dedupe of AGENTS.md/CLAUDE.md.
 
-## 2026-10-17 - Research on 13 competitors (details: docs/research/competitors-2026-10-17.md)
+## 2026-10-17 - Research on 13 external agent CLIs (details: docs/research/competitors-2026-10-17.md)
 
 ### Research
-- Claude Code, Codex CLI, OpenCode, Crush, Aider, Gemini CLI, Pi, Goose, Cline/Kilo, Zed, Amp, Cursor CLI + Terminal-Bench/SWE-bench.
+- 13 external agent CLIs + public benchmarks (Terminal-Bench/SWE-bench).
 - OpenRouter :free: is limited to 50 requests/day, failed requests also count; the Free plan has no prompt caching.
-- Aider: disabling flexible matching → edit errors increase ~9x; mini-SWE-agent using only bash still >74% SWE-bench Verified; Pi's system prompt ~1.138 tokens.
+- One studied tool: disabling flexible matching → edit errors increase ~9x; a minimal bash-only agent still >74% SWE-bench Verified; a minimal agent's system prompt ~1.138 tokens.
 
 ### Idea
 - 12 features ranked by value for free-model users; prioritize RateGate/ModelChain, strict parser + text-mode fallback, lenient str_replace, prompt budget ≤1.200 tokens, multiple tool calls/turn.
