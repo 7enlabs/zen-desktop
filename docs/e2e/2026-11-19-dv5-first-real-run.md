@@ -5,12 +5,15 @@
 > point (anonymous free tier). Paths below are redacted per
 > `docs/e2e/README.md` sanitization rules.
 >
-> **Verdict: NOT DONE.** The real agent run happened and the file was
-> created by a real `Write` tool call, but the file holds 17 bytes
-> (`hello zencode dv5`, no trailing newline) instead of the scoped 18
-> bytes (`hello zencode dv5` + newline). Two attempts at the trailing
-> newline failed; the step was stopped per the two-failure rule. See
-> "What blocked" below.
+> **Verdict: DONE (with caveat).** The real agent run happened and the
+> file was created by a real `Write` tool call. The raw CLI/model output
+> held 17 bytes (`hello zencode dv5`, no trailing newline) instead of the
+> scoped 18 bytes, and two prompt attempts at the newline failed (see
+> "What blocked"). Per Leader decision tin 18480 (option (b) +
+> follow-up), the newline was appended by Bash in the sandbox and the
+> smoke check re-run: file is now byte-exact 18 bytes
+> (`hello zencode dv5` + newline), smoke check PASS. DV-5 closes with
+> the caveat in "Follow-up finding" below.
 
 ## Setup
 
@@ -111,6 +114,41 @@ bytes, verified by `od` again after the run.
 Per the two-failure rule the trailing-newline step stops here; no third
 prompt variation was tried.
 
+## Fix (b) - 08:31 UTC, 20 Nov 2026 (Leader decision tin 18480)
+
+Leader chose option (b) + follow-up: allow Bash in the sandbox to
+append the newline, re-run the smoke check, resubmit the transcript
+with a new commit.
+
+```text
+$ printf '\n' >> dv5-smoke.txt
+$ od -c dv5-smoke.txt
+0000000   h   e   l   l   o       z   e   n   c   o   d   e       d   v
+0000020   5  \n
+0000022
+bytes: 18
+$ printf 'hello zencode dv5\n' | cmp - dv5-smoke.txt
+SMOKE CHECK PASS: byte-exact 18 bytes
+```
+
+**Result: smoke check PASS.** The file is byte-exact
+`hello zencode dv5` + newline (18 bytes). The newline was added by
+Bash, not by the model - see the follow-up finding below. DV-5 closes
+with this caveat.
+
+## Follow-up finding (open, needs a later Leader decision)
+
+Raw CLI/model output lacks the trailing newline: in both real runs the
+model's `Write` tool call carried `content: hello zencode dv5` with no
+`\n`, even when the prompt explicitly required 18 bytes with a trailing
+newline (run 2 repeated the identical no-newline `Write` three times
+and hit `loop_stuck`). Unproven whether the newline is dropped by the
+model or by the tool path - no `\n` was ever sent in any tool call.
+
+Decision still needed: should the CLI emit the trailing newline, or
+should the scope change to 17 bytes? Recorded here as follow-up work,
+not decided in DV-5.
+
 ## What blocked
 
 - **Blocker:** `dv5-smoke.txt` is 17 bytes, not the scoped 18 bytes
@@ -143,5 +181,8 @@ Total:            70 passed; 0 failed
 - Session NDJSON (Desktop `RecordingSink` output): run 1
   `session-1795162149.jsonl`, run 2 `session-1795162206.jsonl`
   (copies in the seat's goal bookkeeping, not in this repo).
-- The 17-byte `dv5-smoke.txt` itself: sandbox
+- The 18-byte `dv5-smoke.txt` itself: sandbox
   `<sandbox>/dv5-smoke.txt` (copy in the seat's goal bookkeeping).
+  Note: the file was 17 bytes as created by the model's `Write` call;
+  the trailing newline was appended by Bash per Leader decision
+  tin 18480 (see "Fix (b)" above).
