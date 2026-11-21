@@ -334,6 +334,9 @@ mod tests {
     use std::io::Write;
 
     const TEST_PUBKEY: &str = "RWQdtwrmteKxjKJr7y54fi1dyz9HDRpXUOghMxrKTduBtg3oOgrttbwi";
+    // Kept verbatim on purpose: TEST_MINISIG below is a real minisign
+    // signature over exactly these bytes. Renaming them breaks
+    // `valid_signature_verifies`, and the signing key is unavailable.
     const TEST_FILE_BYTES: &[u8] = b"zencode test artifact\n";
 
     const TEST_MINISIG: &str = "untrusted comment: signature from minisign secret key\nRUQdtwrmteKxjP9ZDdQqgLwUFtfreh/grgQpZ2GYWa02vXxwUAUvqgYN2Q2ibdIaxnXzScZ3Hu0ybLl6Lk0yspaZ1lxMeJ9EAA0=\ntrusted comment: test artifact\nmlfo4rsTacWkJlPODc4zGLY0JJxMUyhPHXbYaKQw5QRvMnUzEF7AafTOYbBhx22sedmMuVp0VmaGYS8YXYKaDA==\n";
@@ -492,6 +495,9 @@ mod tests {
         .to_string()
     }
 
+    // Kept verbatim on purpose: this is the real v0.3.1 release file name.
+    // Every `tauri_signature(...)` below binds the name into the signature's
+    // trusted comment, so renaming it would invalidate the signed fixtures.
     const URL_031: &str = "https://gitlab.com/7enlab/zen-desktop/-/releases/v0.3.1/downloads/ZenCode%20Desktop_0.3.1_amd64.AppImage";
 
     #[test]
@@ -582,6 +588,10 @@ mod tests {
     }
 
     const FIXTURE_PUBKEY: &str = "RWRaSFNcTx6H8ZYC0RLy36GJrvXrYulwmLlKBha1lbiHmm5NTpdKidsO";
+    // Kept verbatim on purpose: FIXTURE_SIG_B64 is a real Tauri signature
+    // over exactly these bytes and the trusted comment naming
+    // `zencode-desktop_0.3.1_amd64.AppImage`. Renaming either breaks
+    // `real_tauri_signature_binds_the_version`; the key is unavailable.
     const FIXTURE_BYTES: &[u8] = b"zencode updater fixture\n";
     const FIXTURE_SIG_B64: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSYVNGTmNUeDZIOGRjZ3ZtQTJYMG9wWWhuZFdsanZMdTBEcXpCWkxyOTVpR05wMVZBYUM1d3huTVp6YUN5SmJDTmY3TlJSWEYwZHR4cUFDRTZ5MWVSdGFlenJRemoxNVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMzEyMTk3CWZpbGU6emVuY29kZS1kZXNrdG9wXzAuMy4xX2FtZDY0LkFwcEltYWdlCnpJTWlUZ0tUT1BjZEdVcU02aTdocDRRWFV5VkVWN2M4di9TRDlsd2ZsanlPcDVMTGR3elRnVWxmRnh1WVdhSHFraVpxSGNFOGpEYjloemNXSExOcUJ3PT0K";
 

@@ -160,7 +160,7 @@ async fn run_once(
         // The CLI prints an anonymous-usage notice to stderr by default;
         // the PoC opts out (the CLI's own documented opt-out) so stderr
         // stays empty and the pass criterion below stays meaningful.
-        .env("ZENCODE_TELEMETRY", "0")
+        .env("ZEN_TELEMETRY", "0")
         .env("HOME", &home)
         .env_remove("ZEN_MODEL")
         .env_remove("ZEN_BASE_URL")

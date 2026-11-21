@@ -52,7 +52,7 @@ use crate::stream_json::{
 use crate::{telemetry, RunOptions};
 
 /// Where to get the CLI when it is not on PATH (CLI README, `## Install`).
-pub const INSTALL_HINT: &str = "install the Zen CLI: https://github.com/7enlab/zencode#install";
+pub const INSTALL_HINT: &str = "install the Zen CLI: https://github.com/7enlabs/zencore#install";
 
 /// Keep only the tail of stderr (error detail on exit 1, never a full dump).
 const STDERR_TAIL_CAP: usize = 32 * 1024;
@@ -987,7 +987,7 @@ mod tests {
         let err = resolve_zen_binary_from(None, Some("/nonexistent-dir-xyz")).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("not found on PATH"), "{msg}");
-        assert!(msg.contains("7enlab/zencode"), "{msg}");
+        assert!(msg.contains("7enlabs/zencore"), "{msg}");
     }
 
     #[test]
