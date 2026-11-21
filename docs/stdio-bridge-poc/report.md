@@ -55,7 +55,7 @@ PoC run (final code, after `cargo fmt`):
 
 The child env per run mirrors the DV-4 tier-3 runbook (`docs/dv4-tier3-runbook.md`):
 isolated `HOME` and cwd, `ZEN_API_KEY=poc-dummy-key` (dummy, never a real
-key), `ZEN_TRUST_FOLDER=1`, `ZENCODE_TELEMETRY=0`, model `mock-model`,
+key), `ZEN_TRUST_FOLDER=1`, `ZEN_TELEMETRY=0`, model `mock-model`,
 `--base-url http://127.0.0.1:18123/v1`, prompt `hello`, `--max-turns 3`.
 The stub never calls the outside network; the CLI called it exactly once
 per run (stub log: 6 requests = 1 curl probe + 5 CLI calls).
@@ -130,7 +130,7 @@ zen -p --output-format stream-json --model mock-model \
    one-line error (`INSTALL_HINT`). Packaging the CLI with the Desktop is
    a separate decision.
 6. **CLI telemetry notice.** The CLI prints an anonymous-usage notice to
-   stderr by default. The PoC opts out with `ZENCODE_TELEMETRY=0` (the
+   stderr by default. The PoC opts out with `ZEN_TELEMETRY=0` (the
    CLI's own documented opt-out) so stderr stays empty; without it, the
    notice appears but the stream is unaffected (stderr is never part of
    the stream by contract). The first PoC run caught exactly this and
