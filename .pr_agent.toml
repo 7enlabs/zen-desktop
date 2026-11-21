@@ -7,11 +7,11 @@
 # - fail-closed: if no free model answers, the run fails without spending
 # - output_run_details ON so the pilot comment shows which model actually ran
 [config]
-model = "openrouter/cohere/north-mini-code:free"
+model = "openrouter/google/gemma-4-26b-a4b-it:free"
 fallback_models = [
   "openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "openrouter/google/gemma-4-31b-it:free",
-  "openrouter/liquid/lfm-2.5-2.6b:free",
+  "openrouter/liquid/lfm-3-1.7b:free",
 ]
 # Conservative cap equal to PR Agent's own max_model_tokens default.
 # Refine from the OpenRouter catalog context lengths before any main merge;
