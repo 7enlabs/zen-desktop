@@ -57,12 +57,12 @@ own tool configs, not a list of providers Zen offers:
 
 | Input | Maps to |
 |---|---|
-| `anthropic/...`, `claude-*` | Anthropic native API |
+| `anthropic/...`, `claude-*` | Messages API |
 | `openai/...`, `gpt-*`, `o1*`, `o3*` | `https://api.openai.com/v1` |
 | `ollama/...`, `llama*` | Ollama `http://localhost:11434/v1` |
 | `openrouter/...` | `https://openrouter.ai/api/v1` |
 | `deepseek/...` | `https://api.deepseek.com/v1` |
-| `gemini/...`, `google/...`, `gemma*` | Google AI Studio OpenAI endpoint |
+| `gemini/...`, `google/...`, `gemma*` | OpenAI-compatible endpoint |
 | `xai/...`, `grok*` | `https://api.x.ai/v1` |
 | `groq/...` | `https://api.groq.com/openai/v1` |
 | `mistral/...`, `mixtral*` | `https://api.mistral.ai/v1` |
