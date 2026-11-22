@@ -14,11 +14,11 @@ Any step → SKIPPED (user can bail out anytime)
 1. **Welcome** - value prop ("the AI coding agent that cannot bill you"), 60s promise.
 2. **Model select** - auto-probes free endpoints (`probeFreeModels`), pre-selects
    the fastest alive model. User can pick another or go BYOK.
-3. **BYOK (optional)** - provider dropdown + key reference. **Ban-risk warning**
+3. **BYOK (optional)** - route dropdown + key reference. **Ban-risk warning**
    is shown before connecting (mirrors PR #66 knowledge):
-   - Anthropic subscription OAuth → **HIGH** (banned since Feb 2026)
-   - Google AI Ultra / Antigravity → **HIGH** (mass 403 bans)
-   - OpenAI SIWC → **LOW** (official program)
+   - Subscription OAuth login → **HIGH** (account bans reported since Feb 2026)
+   - Consumer AI bundle route → **HIGH** (mass 403 bans reported)
+   - Official key program route → **LOW** (official program)
    - The raw key is never stored - only an opaque key reference.
 4. **Demo task** - one-click run of `"Explain in one sentence what Zen Desktop
    is."` against the chosen model.
@@ -44,6 +44,6 @@ node --check desktop/src/onboarding.js       # syntax
 
 ## Security notes
 
-- No raw API keys in code, logs, or localStorage - only provider label + key ref.
+- No raw API keys in code, logs, or localStorage - only route label + key ref.
 - Probe uses minimal `max_tokens: 1` ping; 8s timeout per model.
 - `AbortController` ensures hung probes don't block the UI.
