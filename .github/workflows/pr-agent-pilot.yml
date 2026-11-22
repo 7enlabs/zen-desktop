@@ -7,7 +7,8 @@
 # - bot senders skipped
 # - runtime image pinned by digest, never a rolling tag
 # - auto-approval is OFF in .pr_agent.toml
-# - all models are :free with multi-provider fallback; fail-closed on exhaustion
+# - single endpoint (model + base URL in .pr_agent.toml and the env below);
+#   fail-closed on exhaustion
 name: PR Agent
 
 on:
@@ -32,7 +33,14 @@ jobs:
       - name: PR Agent action step
         uses: docker://pragent/pr-agent@sha256:b1ed6e8de56eb4d6e4169ee0d5c209bb5ed1ef071a01c0c042c64b80192a785c
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # OpenAI-compatible endpoint (see .pr_agent.toml): PR-Agent reads
+          # the endpoint + key as OPENAI__API_BASE / OPENAI__KEY only, so the
+          # renamed MODEL_API_KEY secret is wired in as OPENAI__KEY. A
+          # literal MODEL_API_KEY env var would be ignored by PR-Agent.
+          # NOTE: the MODEL_API_KEY secret does not exist on GitHub yet;
+          # the pilot run fails until Zen creates it.
+          OPENAI__API_BASE: https://api.experientiallabs.ai/api/v1
+          OPENAI__KEY: ${{ secrets.MODEL_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.pr_actions: '["opened", "reopened", "ready_for_review"]'
           # No config branch here on purpose: on main, repo settings are read

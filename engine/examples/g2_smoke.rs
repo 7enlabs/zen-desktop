@@ -4,8 +4,8 @@ use zen_engine::cli_spawn::{run_cli_task, CliRunHandle};
 use zen_engine::events::RecordingSink;
 use zen_engine::RunOptions;
 
-const BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
-const MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+const BASE_URL: &str = "https://api.experientiallabs.ai/api/v1";
+const MODEL: &str = "deepseek-v4.1-flash";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

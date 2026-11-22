@@ -10,8 +10,8 @@ interface that either side can provide; the policy interface is marked **TBD pen
 ## Research
 
 Quota/rate-limit UX is the market gap for a free-model-first desktop agent. Competitors
-(`docs/research/competitors-2026-10-17.md`) confirm: OpenRouter `:free` models enforce 20 req/min
-and 50 req/day (< 10 credits purchased), and *failed attempts count toward the daily cap* - blind
+(`docs/research/competitors-2026-10-17.md`) confirm: free-endpoint models enforce a per-minute
+and daily request cap, and *failed attempts count toward the daily cap* - blind
 retry burns quota. OpenCode caps retries with jitter for exactly this reason.
 
 How existing tools surface limits:
@@ -20,8 +20,8 @@ How existing tools surface limits:
 |------|-------------------|
 | OpenAI dashboard | Usage bars per day, per-model spend, hard-limit email at 80%/100% |
 | Claude (console) | Weekly usage meter with reset countdown, per-model breakdown |
-| OpenRouter | `X-RateLimit-*` headers, `Retry-After`, key page shows remaining/day |
-| Kilo gateway | Anonymous tier: 200 req/hour/IP, no UI - errors only |
+| Free endpoint | `X-RateLimit-*` headers, `Retry-After`, key page shows remaining/day |
+| Anonymous free tier | Hourly cap per IP, no UI - errors only |
 
 What the UI needs from the policy layer (regardless of location): requests used vs limit (minute
 and day scopes), reset timestamps, queue depth, active model + fallback reason. All of this is

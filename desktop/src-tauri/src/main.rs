@@ -69,7 +69,7 @@ async fn run_task(
         return Err("prompt must not be empty".to_owned());
     }
     if base_url.trim().is_empty() {
-        return Err("no LLM backend configured: set base_url to a free OpenAI-compatible endpoint (e.g. https://ai-gateway.kilo.ai/api/v1)".to_owned());
+        return Err("no LLM backend configured: set base_url to a free OpenAI-compatible endpoint (e.g. https://api.experientiallabs.ai/api/v1)".to_owned());
     }
     let cwd_path = PathBuf::from(&cwd);
     if !cwd_path.is_dir() {

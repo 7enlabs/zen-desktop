@@ -49,8 +49,11 @@ apply time with a note.
 
 ## Model mapping
 
-Imported model strings are translated to Zen provider terms
-(seam for PR #66 `ProviderKind`):
+Imported model strings are translated to a model name + base URL
+(seam for PR #66 `ProviderKind`). The suggested name keeps only the bare
+model name; the endpoint is carried in the mapping itself. The provider
+prefixes in the left column are the input vocabulary read from the user's
+own tool configs, not a list of providers Zen offers:
 
 | Input | Maps to |
 |---|---|

@@ -41,8 +41,8 @@ async function loadNetworkLog() {
   }
 
   NW.entries = [
-    { ts_ms: Date.now() - 42000, host: "ai-gateway.kilo.ai", path: "/chat/completions", purpose: "model_chat", bytes_up: 18432, bytes_down: 5120 },
-    { ts_ms: Date.now() - 18000, host: "ai-gateway.kilo.ai", path: "/chat/completions", purpose: "model_chat", bytes_up: 9216, bytes_down: 2048 },
+    { ts_ms: Date.now() - 42000, host: "api.experientiallabs.ai", path: "/chat/completions", purpose: "model_chat", bytes_up: 18432, bytes_down: 5120 },
+    { ts_ms: Date.now() - 18000, host: "api.experientiallabs.ai", path: "/chat/completions", purpose: "model_chat", bytes_up: 9216, bytes_down: 2048 },
   ];
   NW.verdict = "";
   renderNetwork();

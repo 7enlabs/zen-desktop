@@ -1,4 +1,4 @@
-{"v":1,"seq":0,"type":"system_message","event":"session_start","text":"Session demo-timeline · model nemotron-3-nano:free"}
+{"v":1,"seq":0,"type":"system_message","event":"session_start","text":"Session demo-timeline · model deepseek-v4.1-flash"}
 {"v":1,"seq":1,"type":"assistant_message","text":null,"tool_calls":[{"id":"t1","name":"Read","arguments":"{\"path\":\"src/main.rs\"}"}],"parent_tool_use_id":null}
 {"v":1,"seq":2,"type":"tool_result","tool_use_id":"t1","content":"src/main.rs (48 lines)\nfn main() { println!(\"hello\"); }","is_error":false,"parent_tool_use_id":null}
 {"v":1,"seq":3,"type":"system_message","event":"checkpoint","text":"checkpoint a1b2c3d before seq 4"}

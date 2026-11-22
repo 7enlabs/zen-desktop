@@ -36,8 +36,8 @@ use zen_engine::{events::RecordingSink, run_task_with_sink, RunOptions, scope::S
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut opts = RunOptions::new(
-        "https://ai-gateway.kilo.ai/api/v1", // OpenAI-compatible base URL
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "https://api.experientiallabs.ai/api/v1", // OpenAI-compatible base URL
+        "deepseek-v4.1-flash",
         "/tmp/workdir",                      // cwd the tools operate in
     );
     // R3 scope guard: declare the dirs the agent may touch (deny-by-default).

@@ -92,7 +92,7 @@ pub fn detect(home: &Path) -> Vec<DetectedInstall> {
 pub enum MappedProvider {
     Anthropic { base_url: String },
 
-    OpenAiCompatible { base_url: String, label: String },
+    OpenAiCompatible { base_url: String },
 
     Ollama,
 
@@ -122,44 +122,34 @@ pub fn map_model(raw: &str) -> ModelMapping {
         },
         "openai" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.openai.com/v1".to_string(),
-            label: "openai".to_string(),
         },
         "ollama" => MappedProvider::Ollama,
         "openrouter" => MappedProvider::OpenAiCompatible {
             base_url: "https://openrouter.ai/api/v1".to_string(),
-            label: "openrouter".to_string(),
         },
         "deepseek" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.deepseek.com/v1".to_string(),
-            label: "deepseek".to_string(),
         },
         "gemini" | "google" => MappedProvider::OpenAiCompatible {
             base_url: "https://generativelanguage.googleapis.com/v1beta/openai/".to_string(),
-            label: "gemini".to_string(),
         },
         "xai" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.x.ai/v1".to_string(),
-            label: "xai".to_string(),
         },
         "groq" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.groq.com/openai/v1".to_string(),
-            label: "groq".to_string(),
         },
         "mistral" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.mistral.ai/v1".to_string(),
-            label: "mistral".to_string(),
         },
         "moonshot" | "kimi" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.moonshot.ai/v1".to_string(),
-            label: "moonshot".to_string(),
         },
         "zhipu" | "glm" => MappedProvider::OpenAiCompatible {
             base_url: "https://open.bigmodel.cn/api/paas/v4".to_string(),
-            label: "zhipu".to_string(),
         },
         "qwen" | "dashscope" | "alibaba" => MappedProvider::OpenAiCompatible {
             base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
-            label: "qwen".to_string(),
         },
         _ => {
             if model.starts_with("claude") {
@@ -170,7 +160,6 @@ pub fn map_model(raw: &str) -> ModelMapping {
             {
                 MappedProvider::OpenAiCompatible {
                     base_url: "https://api.openai.com/v1".to_string(),
-                    label: "openai".to_string(),
                 }
             } else if model.starts_with("llama")
                 || model.starts_with("qwen")
@@ -181,22 +170,18 @@ pub fn map_model(raw: &str) -> ModelMapping {
                 MappedProvider::OpenAiCompatible {
                     base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
                         .to_string(),
-                    label: "gemini".to_string(),
                 }
             } else if model.starts_with("grok") {
                 MappedProvider::OpenAiCompatible {
                     base_url: "https://api.x.ai/v1".to_string(),
-                    label: "xai".to_string(),
                 }
             } else if model.starts_with("deepseek") {
                 MappedProvider::OpenAiCompatible {
                     base_url: "https://api.deepseek.com/v1".to_string(),
-                    label: "deepseek".to_string(),
                 }
             } else if model.starts_with("mistral") || model.starts_with("mixtral") {
                 MappedProvider::OpenAiCompatible {
                     base_url: "https://api.mistral.ai/v1".to_string(),
-                    label: "mistral".to_string(),
                 }
             } else {
                 MappedProvider::Unknown
@@ -204,13 +189,12 @@ pub fn map_model(raw: &str) -> ModelMapping {
         }
     };
 
+    // The suggestion is keyed by model + base URL (the endpoint is carried
+    // in `provider`); the provider prefix of the input string is never
+    // carried into the suggested name.
     let suggested_name = match &provider {
-        MappedProvider::Anthropic { .. } => format!("anthropic/{}", model_name_part(raw)),
-        MappedProvider::OpenAiCompatible { label, .. } => {
-            format!("{}/{}", label, model_name_part(raw))
-        }
-        MappedProvider::Ollama => format!("ollama/{}", model_name_part(raw)),
         MappedProvider::Unknown => raw.to_string(),
+        _ => model_name_part(raw).to_string(),
     };
 
     ModelMapping {
@@ -228,20 +212,16 @@ fn map_base_url(url: &str) -> Option<MappedProvider> {
         },
         "https://api.openai.com/v1" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.openai.com/v1".to_string(),
-            label: "openai".to_string(),
         },
         "https://openrouter.ai/api/v1" => MappedProvider::OpenAiCompatible {
             base_url: "https://openrouter.ai/api/v1".to_string(),
-            label: "openrouter".to_string(),
         },
         "https://api.deepseek.com/v1" => MappedProvider::OpenAiCompatible {
             base_url: "https://api.deepseek.com/v1".to_string(),
-            label: "deepseek".to_string(),
         },
         "https://generativelanguage.googleapis.com/v1beta/openai" => {
             MappedProvider::OpenAiCompatible {
                 base_url: "https://generativelanguage.googleapis.com/v1beta/openai/".to_string(),
-                label: "gemini".to_string(),
             }
         }
         "http://localhost:11434/v1" | "http://localhost:11434" => MappedProvider::Ollama,
@@ -1515,24 +1495,21 @@ mod tests {
     #[test]
     fn map_model_table() {
         let cases: &[(&str, &str)] = &[
-            ("anthropic/claude-opus-4-6", "anthropic/claude-opus-4-6"),
-            ("claude-sonnet-4-6", "anthropic/claude-sonnet-4-6"),
-            ("openai/gpt-5", "openai/gpt-5"),
-            ("gpt-5", "openai/gpt-5"),
-            ("o1-preview", "openai/o1-preview"),
-            ("ollama/llama3.1", "ollama/llama3.1"),
-            (
-                "openrouter/deepseek/deepseek-v4",
-                "openrouter/deepseek/deepseek-v4",
-            ),
-            ("deepseek/deepseek-chat", "deepseek/deepseek-chat"),
-            ("gemini/gemini-2.5-pro", "gemini/gemini-2.5-pro"),
-            ("xai/grok-4", "xai/grok-4"),
-            ("groq/llama-3.3-70b", "groq/llama-3.3-70b"),
-            ("mistral/mistral-large", "mistral/mistral-large"),
-            ("moonshot/kimi-k2", "moonshot/kimi-k2"),
-            ("zhipu/glm-4.6", "zhipu/glm-4.6"),
-            ("qwen/qwen3-max", "qwen/qwen3-max"),
+            ("anthropic/claude-opus-4-6", "claude-opus-4-6"),
+            ("claude-sonnet-4-6", "claude-sonnet-4-6"),
+            ("openai/gpt-5", "gpt-5"),
+            ("gpt-5", "gpt-5"),
+            ("o1-preview", "o1-preview"),
+            ("ollama/llama3.1", "llama3.1"),
+            ("openrouter/deepseek/deepseek-v4", "deepseek/deepseek-v4"),
+            ("deepseek/deepseek-chat", "deepseek-chat"),
+            ("gemini/gemini-2.5-pro", "gemini-2.5-pro"),
+            ("xai/grok-4", "grok-4"),
+            ("groq/llama-3.3-70b", "llama-3.3-70b"),
+            ("mistral/mistral-large", "mistral-large"),
+            ("moonshot/kimi-k2", "kimi-k2"),
+            ("zhipu/glm-4.6", "glm-4.6"),
+            ("qwen/qwen3-max", "qwen3-max"),
         ];
         for (raw, expected) in cases {
             let m = map_model(raw);
@@ -1658,7 +1635,7 @@ mod tests {
             .find(|i| i.kind == ImportKind::Model)
             .expect("model item");
         let mapping = model.model_mapping.as_ref().unwrap();
-        assert_eq!(mapping.suggested_name, "openai/gpt-5");
+        assert_eq!(mapping.suggested_name, "gpt-5");
 
         assert!(plan.secrets.iter().any(|s| s.source.ends_with("auth.json")));
     }

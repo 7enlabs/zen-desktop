@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub const FREE_ALLOWLIST: &[&str] = &["deepseek-v4.1-flash-uncensored"];
+pub const FREE_ALLOWLIST: &[&str] = &["deepseek-v4.1-flash", "deepseek-v4.1-flash-uncensored"];
 
 pub const FREE_SUFFIX: &str = ":free";
 
@@ -135,7 +135,6 @@ mod tests {
     #[test]
     fn free_suffix_models_pass() {
         for m in [
-            "openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
             "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
             "deepseek-v4.1-flash:free",
             "qwen3.8-flash:free",

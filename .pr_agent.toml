@@ -3,19 +3,25 @@
 # Functional settings are identical to CLI; only this header changed.
 # Safety gates decided for Route A:
 # - auto-approval OFF (never auto-approve a PR)
-# - all models pinned with the :free suffix, fallback across providers
+# - single endpoint (model + base URL below); no provider fallback
 # - fail-closed: if no free model answers, the run fails without spending
 # - output_run_details ON so the pilot comment shows which model actually ran
+# Endpoint + key are host-only settings, not repo config: the workflow sets
+# OPENAI__API_BASE to https://api.experientiallabs.ai/api/v1 and OPENAI__KEY
+# from the MODEL_API_KEY secret (PR-Agent docs, "Changing a model":
+# OpenAI-compatible endpoints use the openai/ prefix plus [openai] api_base /
+# key in .secrets.toml, or the OPENAI__API_BASE / OPENAI__KEY environment
+# variables). The openai/ prefix below is LiteLLM's routing marker for the
+# OpenAI-compatible wire format, not a provider choice.
 [config]
-model = "openrouter/google/gemma-4-26b-a4b-it:free"
+model = "openai/deepseek-v4.1-flash"
 fallback_models = [
-  "openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "openrouter/google/gemma-4-31b-it:free",
-  "openrouter/liquid/lfm-3-1.7b:free",
+  "openai/deepseek-v4.1-flash-uncensored",
 ]
 # Conservative cap equal to PR Agent's own max_model_tokens default.
-# Refine from the OpenRouter catalog context lengths before any main merge;
-# the pilot diff is small, so this cap is not binding for the pilot run.
+# deepseek-v4.1-flash is not in PR-Agent's token-limit table, so this cap
+# stays until the endpoint's supported input limit is confirmed; the pilot
+# diff is small, so this cap is not binding for the pilot run.
 custom_model_max_tokens = 32000
 enable_auto_approval = false
 output_run_details = true

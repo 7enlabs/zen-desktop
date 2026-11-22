@@ -102,8 +102,6 @@ impl TaskClassifier {
 pub struct ModelEntry {
     pub id: String,
 
-    pub provider: String,
-
     pub base_url: String,
 
     pub kinds: Vec<TaskKind>,
@@ -114,14 +112,12 @@ pub struct ModelEntry {
 impl ModelEntry {
     pub fn new(
         id: impl Into<String>,
-        provider: impl Into<String>,
         base_url: impl Into<String>,
         kinds: Vec<TaskKind>,
         priority: u32,
     ) -> Self {
         Self {
             id: id.into(),
-            provider: provider.into(),
             base_url: base_url.into(),
             kinds,
             priority,
@@ -141,63 +137,21 @@ pub struct ModelRegistry {
 impl ModelRegistry {
     pub fn verified_free() -> Self {
         let all_kinds = vec![TaskKind::Code, TaskKind::Chat, TaskKind::Reasoning];
-        let code_chat = vec![TaskKind::Code, TaskKind::Chat];
+        // Single endpoint: model + base URL only, no provider names.
+        // deepseek-v4.1-flash is the default model, the -uncensored build
+        // is the fallback; both are served by the same endpoint.
         let models = vec![
             ModelEntry::new(
-                "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-                "tokenrouter",
-                "https://api.tokenrouter.com/v1",
+                "deepseek-v4.1-flash",
+                "https://api.experientiallabs.ai/api/v1",
                 all_kinds.clone(),
                 10,
             ),
             ModelEntry::new(
-                "deepseek-v4.1-flash:free",
-                "tokenharbor",
-                "https://tokenharbor.ai/v1",
-                all_kinds.clone(),
-                20,
-            ),
-            ModelEntry::new(
-                "nvidia/nemotron-3-ultra-550b-a55b:free",
-                "openrouter",
-                "https://openrouter.ai/api/v1",
-                all_kinds.clone(),
-                30,
-            ),
-            ModelEntry::new(
-                "deepseek-v4-flash:free",
-                "tokenharbor",
-                "https://tokenharbor.ai/v1",
-                all_kinds.clone(),
-                40,
-            ),
-            ModelEntry::new(
-                "mimo-v2.6-flash:free",
-                "tokenharbor",
-                "https://tokenharbor.ai/v1",
-                code_chat.clone(),
-                50,
-            ),
-            ModelEntry::new(
-                "mimo-v2.5:free",
-                "tokenharbor",
-                "https://tokenharbor.ai/v1",
-                code_chat.clone(),
-                60,
-            ),
-            ModelEntry::new(
                 "deepseek-v4.1-flash-uncensored",
-                "experientiallabs",
-                "https://api.experientiallabs.ai/v1",
-                all_kinds.clone(),
-                70,
-            ),
-            ModelEntry::new(
-                "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-                "kilo",
-                "https://ai-gateway.kilo.ai/api/v1",
+                "https://api.experientiallabs.ai/api/v1",
                 all_kinds,
-                80,
+                20,
             ),
         ];
         let registry = Self { models };
@@ -476,7 +430,7 @@ mod tests {
 
         let ids = plan.model_ids();
         assert!(ids.len() >= 2, "need primary + at least one fallback");
-        assert_eq!(ids[0], "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free");
+        assert_eq!(ids[0], "deepseek-v4.1-flash");
 
         let mut seen = std::collections::HashSet::new();
         for id in &ids {
@@ -530,7 +484,6 @@ mod tests {
     fn free_only_blocks_paid_registry() {
         let registry = ModelRegistry::custom(vec![ModelEntry::new(
             "gpt-4o-paid",
-            "some-provider",
             "https://example.com/v1",
             vec![TaskKind::Chat],
             1,
@@ -548,7 +501,6 @@ mod tests {
     fn byok_allows_custom_models() {
         let registry = ModelRegistry::custom(vec![ModelEntry::new(
             "my-custom-model",
-            "my-provider",
             "https://example.com/v1",
             vec![TaskKind::Chat],
             1,

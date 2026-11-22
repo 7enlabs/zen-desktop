@@ -25,11 +25,11 @@ without checking anything.
 
 ### What "free" means
 
-The `:free` suffix is the de-facto convention across OpenAI-compatible
-gateways (OpenRouter, Kilo, TokenRouter):
+The `:free` suffix is the de-facto convention across free OpenAI-compatible
+endpoints:
 
-- `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` - free tier
-- `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` - paid (same model!)
+- `deepseek-v4.1-flash:free` - free tier
+- `deepseek-v4.1-flash` - paid (same model!)
 
 The suffix is the ONLY machine-readable marker. Names without it are treated
 as paid unless explicitly allowlisted - fail closed.

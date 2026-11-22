@@ -11,50 +11,50 @@ const OnboardingStep = Object.freeze({
 
 const ONBOARDING_STORAGE_KEY = "zen.onboarding.v1";
 
-// Endpoint + keyless flags verified 2026-11-05 from the work box (curl, no key):
-// - https://ai-gateway.kilo.ai/api/v1/models lists nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free;
-//   POST /chat/completions (max_tokens 1, "ping") returns 200, so keyless: true holds.
-// - https://api.blazerail.com/v1/models lists deepseek/deepseek-v4.1-flash:free;
-//   POST /chat/completions without a key returns 401, so keyless: false holds.
+// Default free model: single template endpoint, probed at onboarding.
+// - https://api.experientiallabs.ai/api/v1/models lists deepseek-v4.1-flash;
+//   keyless: false is the conservative default (no keyless probe on record).
 const FREE_MODELS = Object.freeze([
   {
-    id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    label: "Nemotron 3 Nano (keyless)",
-    baseUrl: "https://ai-gateway.kilo.ai/api/v1",
-    keyless: true,
-  },
-  {
-    id: "deepseek/deepseek-v4.1-flash:free",
-    label: "DeepSeek V4.1 Flash (BlazeRail)",
-    baseUrl: "https://api.blazerail.com/v1",
+    id: "deepseek-v4.1-flash",
+    label: "DeepSeek V4.1 Flash",
+    baseUrl: "https://api.experientiallabs.ai/api/v1",
     keyless: false,
   },
 ]);
 
+// Default BYOK endpoint: model + base URL only, no provider choice.
+const BYOK_DEFAULT_MODEL = "deepseek-v4.1-flash";
+const BYOK_DEFAULT_BASE_URL = "https://api.experientiallabs.ai/api/v1";
+
+// Ban-risk warnings, keyed by the endpoint base URL the user enters.
+// The warning text still names the service whose ban policy it describes:
+// the warning is meaningless without saying who bans what, so the service
+// names inside the messages are kept on purpose (safety content).
 const BAN_RISK = Object.freeze({
-  anthropic: {
+  "https://api.anthropic.com": {
     level: "HIGH",
     message:
       "Do NOT sign in with a Claude Pro/Max subscription here - Anthropic bans " +
       "third-party apps using subscription OAuth. Use an Anthropic API key instead.",
   },
-  google: {
+  "https://generativelanguage.googleapis.com/v1beta/openai": {
     level: "HIGH",
     message:
       "Do NOT sign in with Google AI Ultra / Antigravity here - Google issues " +
       "mass 403 bans for third-party subscription use and may affect your whole " +
       "Google account. Use an AI Studio API key instead.",
   },
-  openai: {
+  "https://api.openai.com/v1": {
     level: "LOW",
     message:
       "Sign in with ChatGPT (SIWC) is an official OpenAI program and is safe to use.",
   },
 });
 
-function banRiskFor(provider) {
-  const key = String(provider || "").toLowerCase();
-  return BAN_RISK[key] || { level: "UNKNOWN", message: "Unknown provider - proceed with caution." };
+function banRiskFor(baseUrl) {
+  const key = String(baseUrl || "").trim().toLowerCase().replace(/\/+$/, "");
+  return BAN_RISK[key] || { level: "UNKNOWN", message: "Unknown endpoint - proceed with caution." };
 }
 
 class OnboardingStateMachine {
@@ -110,10 +110,10 @@ class OnboardingStateMachine {
     return true;
   }
 
-  setByok(provider, keyRef) {
+  setByok(model, baseUrl, keyRef) {
     if (this.step !== OnboardingStep.BYOK_SETUP) return false;
-    if (!provider || !keyRef) return false;
-    this.byok = { provider: String(provider), keyRef: String(keyRef) };
+    if (!model || !baseUrl || !keyRef) return false;
+    this.byok = { model: String(model), baseUrl: String(baseUrl), keyRef: String(keyRef) };
     this.step = OnboardingStep.DEMO_TASK;
     return true;
   }
@@ -143,7 +143,8 @@ class OnboardingStateMachine {
     return {
       step: this.step,
       model: this.selectedModel ? this.selectedModel.id : null,
-      byokProvider: this.byok ? this.byok.provider : null,
+      byokModel: this.byok ? this.byok.model : null,
+      byokBaseUrl: this.byok ? this.byok.baseUrl : null,
       demoCompleted: this.demoCompleted,
       elapsedSeconds: this.elapsedSeconds(),
       withinBudget: this.elapsedSeconds() <= 60,
@@ -288,23 +289,18 @@ class OnboardingUI {
       case OnboardingStep.BYOK_SETUP: {
         label.textContent = "Step 2 of 3 - Bring your own key";
         nextBtn.textContent = "Continue →";
-        const risk = banRiskFor(this._byokProvider || "openai");
+        const risk = banRiskFor(this._byokBaseUrl || BYOK_DEFAULT_BASE_URL);
         body.innerHTML = `
           <h2>Bring your own key <span class="pill">optional</span></h2>
-          <label>Provider
-            <select id="ob-provider">
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="google">Google AI Studio</option>
-            </select>
-          </label>
+          <label>Model <input id="ob-model" type="text" value="${BYOK_DEFAULT_MODEL}" /></label>
+          <label>Base URL <input id="ob-baseurl" type="text" value="${BYOK_DEFAULT_BASE_URL}" /></label>
           <div id="ob-banwarn" class="banwarn banwarn-${risk.level.toLowerCase()}">⚠ [${risk.level}] ${risk.message}</div>
           <label>API key reference <input id="ob-keyref" type="text" placeholder="e.g. keychain / vault ref" /></label>
           <p class="hint">Your key is stored in the OS keychain - never in plain text.</p>`;
-        const sel = body.querySelector("#ob-provider");
-        sel.addEventListener("change", () => {
-          this._byokProvider = sel.value;
-          const r = banRiskFor(sel.value);
+        const urlInput = body.querySelector("#ob-baseurl");
+        urlInput.addEventListener("change", () => {
+          this._byokBaseUrl = urlInput.value;
+          const r = banRiskFor(urlInput.value);
           const w = body.querySelector("#ob-banwarn");
           w.className = `banwarn banwarn-${r.level.toLowerCase()}`;
           w.textContent = `⚠ [${r.level}] ${r.message}`;
@@ -366,9 +362,10 @@ class OnboardingUI {
         break;
       }
       case OnboardingStep.BYOK_SETUP: {
-        const provider = body.querySelector("#ob-provider").value;
+        const model = body.querySelector("#ob-model").value.trim() || BYOK_DEFAULT_MODEL;
+        const baseUrl = body.querySelector("#ob-baseurl").value.trim() || BYOK_DEFAULT_BASE_URL;
         const keyRef = body.querySelector("#ob-keyref").value.trim() || "user-keychain";
-        if (!m.setByok(provider, keyRef)) return;
+        if (!m.setByok(model, baseUrl, keyRef)) return;
         break;
       }
       case OnboardingStep.DEMO_TASK:
@@ -450,6 +447,8 @@ if (typeof module !== "undefined" && module.exports) {
     OnboardingStep,
     OnboardingStateMachine,
     FREE_MODELS,
+    BYOK_DEFAULT_MODEL,
+    BYOK_DEFAULT_BASE_URL,
     BAN_RISK,
     banRiskFor,
     ONBOARDING_STORAGE_KEY,

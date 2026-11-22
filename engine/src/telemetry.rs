@@ -308,18 +308,18 @@ mod tests {
 
     #[test]
     fn guard_accepts_configured_host() {
-        let g = TelemetryGuard::from_base_url("https://ai-gateway.kilo.ai/api/v1").unwrap();
-        assert_eq!(g.allowed_host(), "ai-gateway.kilo.ai");
-        assert!(g.allows("ai-gateway.kilo.ai"));
-        assert!(g.allows("AI-GATEWAY.KILO.AI"));
+        let g = TelemetryGuard::from_base_url("https://api.experientiallabs.ai/api/v1").unwrap();
+        assert_eq!(g.allowed_host(), "api.experientiallabs.ai");
+        assert!(g.allows("api.experientiallabs.ai"));
+        assert!(g.allows("API.EXPERIENTIALLABS.AI"));
         assert!(g
-            .check_url("https://ai-gateway.kilo.ai/api/v1/chat/completions")
+            .check_url("https://api.experientiallabs.ai/api/v1/chat/completions")
             .is_ok());
     }
 
     #[test]
     fn guard_blocks_foreign_host() {
-        let g = TelemetryGuard::from_base_url("https://ai-gateway.kilo.ai/api/v1").unwrap();
+        let g = TelemetryGuard::from_base_url("https://api.experientiallabs.ai/api/v1").unwrap();
         assert!(!g.allows("telemetry.zen.example"));
         let err = g
             .check_url("https://telemetry.zen.example/v1/ping")
@@ -400,7 +400,7 @@ mod tests {
     fn proof_clean_when_only_configured_host() {
         let log = NetworkLog::new();
         log.record(
-            "ai-gateway.kilo.ai",
+            "api.experientiallabs.ai",
             "/chat/completions",
             NetworkPurpose::ModelChat,
             100,
@@ -409,7 +409,7 @@ mod tests {
         let report = ZeroTelemetryProof::generate(&log);
         assert!(report.is_clean());
         assert!(report.zen_hosts_contacted.is_empty());
-        assert_eq!(report.hosts_contacted, vec!["ai-gateway.kilo.ai"]);
+        assert_eq!(report.hosts_contacted, vec!["api.experientiallabs.ai"]);
         assert!(report.verdict.starts_with("Clean"));
     }
 
