@@ -7,8 +7,8 @@ use zen_engine::events::RecordingSink;
 use zen_engine::scope::ScopeDecl;
 use zen_engine::RunOptions;
 
-const DEFAULT_BASE_URL: &str = "https://ai-gateway.kilo.ai/api/v1";
-const DEFAULT_MODEL: &str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+const DEFAULT_BASE_URL: &str = "https://api.experientiallabs.ai/api/v1";
+const DEFAULT_MODEL: &str = "deepseek-v4.1-flash";
 
 fn usage() -> ! {
     eprintln!("usage:");

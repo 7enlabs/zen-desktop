@@ -18,9 +18,9 @@ const state = {
 };
 
 const MOCK_SESSIONS = [
-  { id: "2026-10-17-a1b2c3", title: "Refactor rate_gate.rs", preview: "extract quota persistence…", model: "nemotron-3-nano:free", updated: "17:20" },
-  { id: "2026-10-17-d4e5f6", title: "Debug checkpoint restore", preview: "auto-checkpoint before restore…", model: "nemotron-3-nano:free", updated: "16:02" },
-  { id: "2026-10-16-9a8b7c", title: "Plan mode spike", preview: "PlanGuardedTool intercepts…", model: "nemotron-3-nano:free", updated: "yesterday" },
+  { id: "2026-10-17-a1b2c3", title: "Refactor rate_gate.rs", preview: "extract quota persistence…", model: "deepseek-v4.1-flash", updated: "17:20" },
+  { id: "2026-10-17-d4e5f6", title: "Debug checkpoint restore", preview: "auto-checkpoint before restore…", model: "deepseek-v4.1-flash", updated: "16:02" },
+  { id: "2026-10-16-9a8b7c", title: "Plan mode spike", preview: "PlanGuardedTool intercepts…", model: "deepseek-v4.1-flash", updated: "yesterday" },
 ];
 
 const TAURI = (typeof window !== "undefined" && window.__TAURI__) || null;
@@ -28,8 +28,8 @@ const invoke = TAURI ? TAURI.core.invoke : null;
 const Channel = TAURI ? TAURI.core.Channel : null;
 
 const LIVE_DEFAULTS = {
-  model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  baseUrl: "https://ai-gateway.kilo.ai/api/v1",
+  model: "deepseek-v4.1-flash",
+  baseUrl: "https://api.experientiallabs.ai/api/v1",
   cwd: ".",
 };
 
@@ -298,7 +298,7 @@ document.getElementById("input").addEventListener("focus", updateComposerHints);
 document.getElementById("input").addEventListener("blur", hideComposerHints);
 document.getElementById("new-session").onclick = () => {
   const id = "draft-" + Date.now().toString(36);
-  state.sessions.unshift({ id, title: "New session", preview: "", model: "nemotron-3-nano:free", updated: "now" });
+  state.sessions.unshift({ id, title: "New session", preview: "", model: "deepseek-v4.1-flash", updated: "now" });
   renderSessions(); selectSession(id);
 };
 document.getElementById("session-search").addEventListener("input", e => renderSessions(e.target.value));
@@ -441,7 +441,7 @@ function demoQuotaCycle() {
 
 async function playDemo() {
   demoTimers.forEach(clearTimeout); demoTimers = [];
-  setStatus("model", "model: nemotron-3-nano:free");
+  setStatus("model", "model: deepseek-v4.1-flash");
   demoQuotaCycle();
   setStatus("conn", "● mock");
   let lines;

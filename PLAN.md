@@ -29,7 +29,7 @@ The Desktop consumes the CLI crates through a pinned-rev git dependency (current
 | g1 | Crate `engine/` depending on `zen-agent`, `zen-tools`, `zen-core` (git, pinned rev); run 1 agent loop with mock LLM (localhost server) calling Read + Edit tools in tempdir | DONE (4 tests: Read→Edit via real HTTP to mock server, Bash, 500 error, wrong input) | `cd engine && cargo test` green; CI build engine on 3 OS |
 | s1 | Versioned event schema (engine/src/events.rs, SCHEMA_VERSION=1) + insta contract test | DONE 2026-10-17 (CI green 3 OS, 4512c0f) | `cd engine && cargo test`: snapshot event_stream_v1 + refuse new/missing version (6 tests green) |
 | g2 | `zencode run "<task>"` calls engine with real free channel (only `:free`), save session | TODO | run 1 small real task, transcript without keys into docs/e2e/ |
-| g3 | RateGate: daily quota per provider (OpenRouter :free 50 req/day, errors count) wrapping CLI client, switch model when exhausted | TODO | test quota counting + model switching with mock server |
+| g3 | RateGate: daily quota on the free endpoint (50 req/day, errors count) wrapping CLI client, switch model when exhausted | TODO | test quota counting + model switching with mock server |
 | g4 | Prompt budget: measure CLI system prompt + tool defs, CI test ≤1,200 tokens (or minimal tool profile) | TODO | test print token count, fail if exceeded |
 | g5 | `zencode eval` 10 tasks, table of requests/tokens/429/edit-fail/pass | TODO | run with ≥1 :free model; tag v0.3.0 when ≥5/10 + CI green |
 | g6 | Desktop UI (after v0.3.0) | TODO | - |

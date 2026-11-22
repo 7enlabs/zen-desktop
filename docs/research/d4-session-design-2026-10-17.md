@@ -43,7 +43,7 @@ Session id: `YYYY-MM-DD-<12 hex chars>` (sortable, unique enough, human-greppabl
       "created_at": "2026-10-17T09:00:00Z",
       "updated_at": "2026-10-17T09:15:32Z",
       "message_count": 12,
-      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "model": "deepseek-v4.1-flash",
       "cwd": "/home/user/myproject",
       "parent_id": null
     }

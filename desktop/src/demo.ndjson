@@ -1,4 +1,4 @@
-{"v":1,"type":"system_message","event":"session_start","text":"Session 2026-10-17-a1b2c3 · model nemotron-3-nano:free"}
+{"v":1,"type":"system_message","event":"session_start","text":"Session 2026-10-17-a1b2c3 · model deepseek-v4.1-flash"}
 {"v":1,"type":"text_delta","text":"I'll refactor the quota persistence in "}
 {"v":1,"type":"text_delta","text":"`rate_gate.rs` to use atomic writes. First, let me look at the current code."}
 {"v":1,"type":"assistant_message","content":"I'll refactor the quota persistence in `rate_gate.rs` to use atomic writes. First, let me look at the current code."}

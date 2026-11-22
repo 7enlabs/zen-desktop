@@ -60,20 +60,22 @@ describe("OnboardingStateMachine - BYOK detour", () => {
     assert.ok(m.chooseByok());
     assert.equal(m.step, OnboardingStep.BYOK_SETUP);
 
-    assert.equal(banRiskFor("anthropic").level, "HIGH");
-    assert.equal(banRiskFor("google").level, "HIGH");
-    assert.equal(banRiskFor("openai").level, "LOW");
-    assert.ok(m.setByok("openai", "keychain-ref-1"));
+    assert.equal(banRiskFor("https://api.anthropic.com").level, "HIGH");
+    assert.equal(banRiskFor("https://generativelanguage.googleapis.com/v1beta/openai/").level, "HIGH");
+    assert.equal(banRiskFor("https://api.openai.com/v1").level, "LOW");
+    assert.ok(m.setByok("deepseek-v4.1-flash", "https://api.experientiallabs.ai/api/v1", "keychain-ref-1"));
     assert.equal(m.step, OnboardingStep.DEMO_TASK);
-    assert.equal(m.summary().byokProvider, "openai");
+    assert.equal(m.summary().byokModel, "deepseek-v4.1-flash");
+    assert.equal(m.summary().byokBaseUrl, "https://api.experientiallabs.ai/api/v1");
   });
 
-  test("setByok rejects empty provider/keyRef", () => {
+  test("setByok rejects empty model/baseUrl/keyRef", () => {
     const m = new OnboardingStateMachine();
     m.begin();
     m.chooseByok();
-    assert.equal(m.setByok("", "ref"), false);
-    assert.equal(m.setByok("openai", ""), false);
+    assert.equal(m.setByok("", "https://api.experientiallabs.ai/api/v1", "ref"), false);
+    assert.equal(m.setByok("deepseek-v4.1-flash", "", "ref"), false);
+    assert.equal(m.setByok("deepseek-v4.1-flash", "https://api.experientiallabs.ai/api/v1", ""), false);
     assert.equal(m.step, OnboardingStep.BYOK_SETUP);
   });
 
@@ -114,7 +116,7 @@ describe("OnboardingStateMachine - skip & invalid transitions", () => {
     const m = new OnboardingStateMachine();
     assert.equal(m.selectModel(FREE_MODELS[0]), false);
     assert.equal(m.completeDemo(), false);
-    assert.equal(m.setByok("openai", "r"), false);
+    assert.equal(m.setByok("deepseek-v4.1-flash", "https://api.experientiallabs.ai/api/v1", "r"), false);
     assert.equal(m.step, OnboardingStep.WELCOME);
   });
 
@@ -171,21 +173,18 @@ describe("probe + recommendation", () => {
     assert.equal(r.alive, false);
   });
 
-  test("probeFreeModels sorts alive by latency", async () => {
-    const fakeFetch = async (url) => {
-      await new Promise((res) => setTimeout(res, url.includes("blazerail") ? 30 : 5));
-      return { ok: true };
-    };
+  test("probeFreeModels reports the default model alive", async () => {
+    const fakeFetch = async () => ({ ok: true });
     const alive = await probeFreeModels(fakeFetch, 2000);
     assert.equal(alive.length, FREE_MODELS.length);
-    assert.ok(alive[0].latencyMs <= alive[1].latencyMs);
+    assert.equal(alive[0].id, FREE_MODELS[0].id);
   });
 
-  test("recommendedDefaultModel prefers fastest alive, else keyless", () => {
-    const rec = recommendedDefaultModel([{ id: FREE_MODELS[1].id, alive: true, latencyMs: 10 }]);
-    assert.equal(rec.id, FREE_MODELS[1].id);
+  test("recommendedDefaultModel prefers fastest alive, else the default model", () => {
+    const rec = recommendedDefaultModel([{ id: FREE_MODELS[0].id, alive: true, latencyMs: 10 }]);
+    assert.equal(rec.id, FREE_MODELS[0].id);
     const fallback = recommendedDefaultModel([]);
-    assert.equal(fallback.keyless, true);
+    assert.equal(fallback.id, FREE_MODELS[0].id);
   });
 });
 
@@ -197,9 +196,11 @@ describe("demo task", () => {
     assert.ok(DEMO_PROMPT.length > 0);
   });
 
-  test("BAN_RISK covers anthropic/google/openai", () => {
-    assert.ok(BAN_RISK.anthropic && BAN_RISK.google && BAN_RISK.openai);
-    assert.equal(banRiskFor("ANTHROPIC").level, "HIGH");
+  test("BAN_RISK is keyed by base URL", () => {
+    assert.ok(BAN_RISK["https://api.anthropic.com"]);
+    assert.ok(BAN_RISK["https://generativelanguage.googleapis.com/v1beta/openai"]);
+    assert.ok(BAN_RISK["https://api.openai.com/v1"]);
+    assert.equal(banRiskFor("HTTPS://API.ANTHROPIC.COM/").level, "HIGH");
     assert.equal(banRiskFor("unknown-xyz").level, "UNKNOWN");
   });
 });

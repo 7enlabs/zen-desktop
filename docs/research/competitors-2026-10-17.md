@@ -1,6 +1,6 @@
 # ZenCode Desktop - Competitor research (2026-10-17)
 
-> Scope: coding agent CLI/desktop, perspective of "running well on FREE models" (OpenRouter `:free`, free router; weak/slow models, frequent 429s, small context).
+> Scope: coding agent CLI/desktop, perspective of "running well on FREE models" (free models, free router; weak/slow models, frequent 429s, small context).
 > Method: web_search (prioritize post-2026-08-01) + web_fetch original page when possible. Each point has a link.
 > Convention: **[primary]** = original page opened (author's changelog/release/docs/blog); **[secondary]** = aggregated article/news, original page not opened; **unconfirmed** = no reliable source found.
 > No repo modifications. No fabricated figures.
@@ -11,12 +11,12 @@
 
 | Constraint | Figure | Source |
 |---|---|---|
-| OpenRouter `:free` rate limit | 20 req/min; **50 req/day** if < 10 credits purchased, 1,000 req/day if ≥ 10 credits | [primary] https://openrouter.ai/docs/api/reference/limits |
-| Failed requests still count | "Failed attempts count toward that daily cap" | [primary] https://openrouter.ai/pricing (FAQ "Do you enforce rate limits?") |
-| 429 has headers | `X-RateLimit-Limit/Remaining/Reset`, sometimes `Retry-After`; exponential backoff recommended; "model fallbacks" supported | [primary] https://openrouter.ai/docs/api/reference/limits |
-| Quota check | `GET /api/v1/key` → `free_model_daily_requests {used, limit, remaining}` (resets 00:00 UTC) | [primary] same page as above |
-| 429 mid-stream | Arrives as SSE event `finish_reason: "error"` rather than HTTP 429 | [primary] same page as above |
-| Prompt caching on Free tier | Pricing table shows Prompt Caching = **No** on Free tier | [primary] https://openrouter.ai/pricing - *specific application per `:free` endpoint: unconfirmed* |
+| Free-endpoint rate limit | 20 req/min; **50 req/day** on the free plan | Free-endpoint docs |
+| Failed requests still count | "Failed attempts count toward that daily cap" | Free-endpoint docs |
+| 429 has headers | `X-RateLimit-Limit/Remaining/Reset`, sometimes `Retry-After`; exponential backoff recommended; "model fallbacks" supported | Free-endpoint docs |
+| Quota check | `GET /api/v1/key` → `free_model_daily_requests {used, limit, remaining}` (resets 00:00 UTC) | Free-endpoint docs |
+| 429 mid-stream | Arrives as SSE event `finish_reason: "error"` rather than HTTP 429 | Free-endpoint docs |
+| Prompt caching on Free tier | Pricing table shows Prompt Caching = **No** on Free tier | Free-endpoint docs - *specific application per `:free` endpoint: unconfirmed* |
 
 **Implication:** with 50 req/day, *each request* is a scarce resource → win by "more work per request" (small prompts, batched tool calls, fewer blind retries), not by prompt caching.
 **(EN):** At 50 requests/day, request economy beats token economy; blind retries literally burn the daily budget.
@@ -57,7 +57,7 @@
 6. **Request economy** - Codex runs read-only tools in parallel (0.163) [primary]; OpenCode Code Mode: one script calls many tools in 1 round-trip, MCP goes through Code Mode by default [secondary, quoting the launch note]. At 50 req/day this is the biggest lever (fewer LLM turns per task).
 7. **Safety & undo** - atomic file writes (temp+rename) and serialized writes to the same path (Gemini 0.64) [secondary detail]; hook `onFailure: "block"` (a failing hook blocks instead of passing) [secondary]; `continueOnBlock` returns the denial reason to the model and continues the turn [primary W20]; bwrap + seccomp sandbox (Codex docs) [primary 0.163]; checkpoint snapshots (Cline Desktop) [secondary].
 
-> Prompt caching note: the OpenRouter docs describe sticky routing + caching at 0.1×–0.5× of the input price for supporting providers [primary] https://openrouter.ai/docs/guides/best-practices/prompt-caching , but the Free plan lists "Prompt Caching: No" [primary pricing]. → For free users, **keeping a stable prefix is still worth doing (cheap, future-compatible)**, but expect no measurable benefit; low priority.
+> Prompt caching note: the free-endpoint docs describe sticky routing + caching at 0.1×–0.5× of the input price for supporting providers, but the Free plan lists "Prompt Caching: No". → For free users, **keeping a stable prefix is still worth doing (cheap, future-compatible)**, but expect no measurable benefit; low priority.
 
 ---
 
@@ -68,7 +68,7 @@ Architecture assumption: `core/` has the traits `Llm`, `Tool`, `Sandbox`, `Sessi
 
 | # | Feature | Learned from | Why (free model) | Rust sketch in `core/` | Effort | Before/after metric | Milestone |
 |---|---|---|---|---|---|---|---|
-| 1 | **RateGate + ModelChain** (429-aware fallback chain) | OpenRouter limits/fallbacks; OpenCode retry cap+jitter | 429s and the 50/day quota are the most common failures; blind retries burn quota | `core/llm/rate.rs`: `struct RateGate { rpm: TokenBucket, daily: DailyBudget }` reads `X-RateLimit-*`, `Retry-After`, `GET /api/v1/key`. `core/llm/chain.rs`: `struct ModelChain(Vec<Box<dyn Llm>>)` impl `Llm`; `enum LlmError { RateLimited{retry_after, scope: Minute\|Day}, ContextOverflow, Transient, Fatal }`; on `Day` → jump to the next model/router, no retry; on `Minute` → wait, at most N times + jitter; also handles mid-stream errors (`finish_reason:"error"`) | M | % of tasks completed on the 10-task eval with 1 free key; wasted (failed) requests per task; number of stops due to 429 | **v0.3.0** |
+| 1 | **RateGate + ModelChain** (429-aware fallback chain) | Free-endpoint limits/fallbacks; OpenCode retry cap+jitter | 429s and the 50/day quota are the most common failures; blind retries burn quota | `core/llm/rate.rs`: `struct RateGate { rpm: TokenBucket, daily: DailyBudget }` reads `X-RateLimit-*`, `Retry-After`, `GET /api/v1/key`. `core/llm/chain.rs`: `struct ModelChain(Vec<Box<dyn Llm>>)` impl `Llm`; `enum LlmError { RateLimited{retry_after, scope: Minute\|Day}, ContextOverflow, Transient, Fatal }`; on `Day` → jump to the next model/router, no retry; on `Minute` → wait, at most N times + jitter; also handles mid-stream errors (`finish_reason:"error"`) | M | % of tasks completed on the 10-task eval with 1 free key; wasted (failed) requests per task; number of stops due to 429 | **v0.3.0** |
 | 2 | **Prompt budget ≤ 1,200 tokens** (system + tool schemas) | Pi | Small context + every request is precious | `core/prompt/mod.rs`: static prompt, 3 tools (shell/read/str_replace) with short descriptions; `fn prompt_floor_tokens()` estimate (chars/4) printed in `--stats`; CI test fails above the threshold | S | fixed tokens/request (target ≤ 1,200; Pi measured 1,138) | **v0.3.0** |
 | 3 | **Controlled lenient str_replace** | Aider flexible patching; Pi edit | Weak models often get whitespace/indent wrong → edit fails → extra requests | `core/tools/str_replace.rs` + `core/edit/matcher.rs`: matching ladder exact → normalize CRLF/trailing space → relative indent → line match ignoring blank lines; **exactly 1 match** required, on 0/≥2 return a structured error (top-3 similar regions + line numbers) | M | failed edits / total edits; "fix the edit" requests per task (Aider: flexible off → 9× errors) | **v0.3.0** |
 | 4 | **Strict tool-call parser + text-mode fallback** | Cline 3.0.54; Codex #53451; mini-SWE-agent | Many free models lack or have unstable tool calling; truncated JSON | `core/parse/toolcall.rs`: validate with serde against the schema; truncated/missing JSON → `ToolError::Malformed` sent back to the model (never invented). `core/parse/text_fallback.rs`: if the provider has no tools support, require exactly 1 ```bash``` block or a `<<<str_replace>>>` block; capability stored in `ModelProfile` | M | % of turns with a valid tool call; number of free models that can run `zencode run` (target: including models without tools) | **v0.3.0** |

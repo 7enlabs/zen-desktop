@@ -138,7 +138,7 @@ parser):
   `num_turns = 3`, `input_tokens = 1200`, `output_tokens = 340`,
   `duration_ms = 45210`, `model = ""` (absent model defaults to empty);
   07 gives `success = false`, result contains `429`; 12 gives
-  `model = "cohere/north-mini-code:free"`; 20 gives `success = false` +
+  `model = "deepseek-v4.1-flash"`; 20 gives `success = false` +
   correct model.
 - Projecting `system/init` → `SystemMessage { event: "cli_system:init" }`
   containing `ses_abc123` and the model; `assistant` →

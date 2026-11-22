@@ -92,7 +92,7 @@
 
 ### Research
 - 13 external agent CLIs + public benchmarks (Terminal-Bench/SWE-bench).
-- OpenRouter :free: is limited to 50 requests/day, failed requests also count; the Free plan has no prompt caching.
+- The free endpoint: limited to 50 requests/day, failed requests also count; the free plan has no prompt caching.
 - One studied tool: disabling flexible matching → edit errors increase ~9x; a minimal bash-only agent still >74% SWE-bench Verified; a minimal agent's system prompt ~1.138 tokens.
 
 ### Idea

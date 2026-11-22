@@ -39,7 +39,7 @@ CI (`.gitlab-ci.yml`): fmt, clippy `-D warnings`, `cargo test --locked`, `cargo 
 release-key check - runs on push/MR.
 
 GitHub CI (`.github/workflows/`): PR Agent free-model review (Route A, same config
-as CLI: `openrouter/cohere/north-mini-code:free` with free fallbacks, auto-approval
+as CLI: `deepseek-v4.1-flash` with free fallbacks, auto-approval
 off) runs on PR opened, reopened, and ready for review only.
 
 ## Roadmap

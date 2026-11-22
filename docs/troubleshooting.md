@@ -46,7 +46,7 @@ cd engine && cargo test --locked --test fake_llm
 ## Model / API issues
 
 ### HTTP 429 (rate limit) on `:free` models
-**Cause:** free tiers are aggressively rate-limited (e.g. OpenRouter `:free` ≈ 50 req/day; Kilo anonymous ≈ 200 req/hour/IP).
+**Cause:** free tiers are aggressively rate-limited (e.g. the free endpoint's daily quota; anonymous tiers are stricter).
 **Fix:** the CLI's client already retries 429/5xx honoring `Retry-After` and walks `fallback_models`. If you still hit limits: wait for the reset window, reduce request volume, or switch provider. Do not hammer retries - it extends the ban.
 
 ### `401 Unauthorized` / `403` from a provider
