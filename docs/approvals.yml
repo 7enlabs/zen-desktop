@@ -1,0 +1,40 @@
+# Approval policy for Zen Desktop pull requests.
+# Machine-readable mirror of the merge policy in CONTRIBUTING.md.
+# Modelled on Claude Ship's `.claude/approvals.yml` (policy-as-code):
+# version, mode (observe/enforce), rules with purpose, paths, verdict,
+# override. Adapted to this team: the approving agent is the Leader, not
+# Claude, so verdict uses `leader` instead of `claude`.
+# Extra key: `requires` lists the gates a rule needs beyond the verdict
+# (lint, tests). A future merge-gate script can read this file and check them.
+# If this file drifts from CONTRIBUTING.md, CONTRIBUTING.md wins and this
+# file is the bug.
+# Mode is observe: this file records what the policy WOULD decide. It does
+# not block merges; the Leader still decides every merge (a leader reviews
+# every PR; developers do not self-merge). Switching to enforce needs a
+# Zen decision (and branch protection on main, which the repo deliberately
+# does not have today).
+version: 1
+mode: observe
+rules:
+  - purpose: "Every change needs Leader review: CI green (lint + tests), and the Leader reads the real output. Merge strategy is squash; delete the branch after merge."
+    paths: ["**"]
+    verdict: { leader: comments, seats: 1 }
+    requires: [lint, tests]
+    override:
+      - { if: "ci = pass and review = pass", verdict: { leader: approves, seats: 1 } }
+
+  - purpose: "Sensitive changes need a person (Zen): workflows, installer or release scripts, secrets, auto-update, network calls to a new host, and core/ (frozen: do not change without an explicit decision)."
+    paths: [".github/workflows/**", "scripts/**", "rebuild/**", "core/**"]
+    verdict: { leader: comments, seats: 2 }
+    requires: [human-zen]
+
+  - purpose: "Changes to engine/ (the bridge to the embedded ZenCore crate, including the CLI-spawn code being removed) need the engine checks: cargo fmt, clippy with -D warnings, cargo test --locked."
+    paths: ["engine/**"]
+    verdict: { leader: comments, seats: 1 }
+    requires: [fmt, clippy, engine-tests]
+    override:
+      - { if: "ci = pass and review = pass", verdict: { leader: approves, seats: 1 } }
+
+  - purpose: "Changes to this policy file or CONTRIBUTING.md need two seats: the policy itself is protected."
+    paths: ["docs/approvals.yml", "CONTRIBUTING.md"]
+    verdict: { leader: comments, seats: 2 }
